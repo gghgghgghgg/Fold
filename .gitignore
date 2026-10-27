@@ -1,0 +1,40 @@
+# Local experiment outputs and training data.
+logs/
+outputs/
+results/
+checkpoints/
+reports/
+rendered/
+wandb/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.orig
+*.pth
+*.ckpt
+*.pt
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.mp4
+*.avi
+*.jsonl
+*.log
+
+# Local dataset inputs, generated geometry/force arrays, and machine-specific paths.
+fold/assets/retargeted/
+fold/assets/retargeter_results/
+fold/assets/contact_retarget/
+fold/assets/arctic/processed/
+fold/assets/
+force_command_estimator/data/
+force_command_estimator/results/
+global_anchor_force_field/data/
+global_anchor_force_field/results/
+
+# Experimental local-forcefield feature deferred until paper-level validation.
+stage2/force_field_mask.py
+fold/tests/test_stage2_force_field_mask.py
+
+.DS_Store

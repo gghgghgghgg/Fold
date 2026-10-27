@@ -1,0 +1,13 @@
+# Reference runtime versions recorded on the research server (Python 3.10).
+# Install the CUDA-enabled PyTorch wheel separately; see docs/REPRODUCTION_CN.md.
+genesis-world==0.3.3
+gym==0.23.1
+libigl==2.5.1
+numpy==1.26.4
+scipy==1.15.3
+opencv-python==4.11.0.86
+trimesh==4.11.0
+tensorboard==2.20.0
+tensorboardX==2.6.4
+PyYAML==6.0.3
+wandb==0.12.21
