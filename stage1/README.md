@@ -15,9 +15,12 @@ Files:
 
 Example launch:
 
-python stage1/train_stage1.py   --hand inspire_hand   --clip box-30-230-s01-u01   -B 4096   -am hybrid   -imi 0.3   -bc 0.3   --max_epochs 5000
+```bash
+bash training/train_stage1_box_example.sh
+```
+
+This maintained example uses Box `[30,230)`, Inspire `para` retargeting, seed 42, batch 128, horizon 4, and 1000 epochs. Environment variables documented in [`training/README.md`](../training/README.md) can select the clip, retarget, seed, and epoch budget. Do not use the older B4096/5000 command from archived notes as the current example.
 
 Notes:
-- train_stage1.py forces curriculum_cfg = {} and object_cfg.actuated = False.
-- Output dimensions match the FoLD action interface.
-- The saved run directory includes stage1_obs_spec.yaml for later stage-2 reuse.
+- Stage 1 disables curriculum and object-side actuation.
+- The saved run includes the observation specification used by Stage 2.

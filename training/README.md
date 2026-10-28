@@ -5,7 +5,7 @@ This directory collects launch examples for the three learned components. The tr
 ## Before training
 
 1. Install the environment using the code at the top of the [repository README](../README.md).
-2. Obtain data and models under their source terms. Install local files at the paths documented in the [full reproduction guide](../docs/ENVIRONMENT_SETUP_AND_REPRODUCTION.md). The local candidate workspace has Box, Ketchup, and Notebook examples staged under `fold/assets/`; their GitHub inclusion is pending written ARCTIC redistribution permission. See the [example-data manifest](../docs/EXAMPLE_DATA.md).
+2. Obtain any required data and models under their source terms. The reviewed candidate tree tracks the six ARCTIC-derived example files listed in the [example-data manifest](../docs/EXAMPLE_DATA.md); verify the cloned revision contains them. Tracking status does not establish redistribution permission. Follow the [full reproduction guide](../docs/ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for local asset paths.
 3. From the repository root, set `PYTHONPATH`, `SETUPTOOLS_USE_DISTUTILS`, and `WANDB_MODE` as shown in the README.
 4. Prepare a complete local sequence, retarget trajectory, 200-anchor file, and force-command data. The full guide explains each preprocessing step and expected schema.
 

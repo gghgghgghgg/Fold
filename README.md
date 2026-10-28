@@ -2,6 +2,18 @@
 
 FoLD is a pipeline for dexterous manipulation of articulated objects. This repository contains the training and evaluation code used in our work.
 
+**Haowei Shen**$^{1}$, **Tingai Li**$^{1}$, **Yumeng Liu**$^{1,*}$, Wenyuan Guang$^{2}$,<br>
+Xuanze Yang$^{1}$, Qing Fang$^{1}$, Kai Xu$^{2,3}$, Ligang Liu$^{1}$, Ruizhen Hu$^{4}$
+
+$^{1}$University of Science and Technology of China<br>
+$^{2}$Institute of AI for Industries, Chinese Academy of Sciences<br>
+$^{3}$Jiangsu Key Laboratory of AI for Industries<br>
+$^{4}$Shenzhen University
+
+$^{*}$Corresponding author: Yumeng Liu ([lym29@mail.ustc.edu.cn](mailto:lym29@mail.ustc.edu.cn)).
+
+[Paper (arXiv:2609.33551)](https://arxiv.org/abs/2609.33551) · [Project page](https://gghgghgghgg.github.io/FoLD-project-page/)
+
 ## Installation
 
 We recommend Linux with Python 3.10. From the repository root:

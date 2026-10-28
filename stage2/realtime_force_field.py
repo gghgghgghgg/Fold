@@ -10,6 +10,41 @@ from force_command_estimator.field_encoder import FieldAutoencoder
 from stage2.realtime_wrench import RealtimeWrenchCommand, RealtimeWrenchConfig
 
 
+def _build_frame_to_row(
+    frame_index: np.ndarray,
+    frame_offset: int,
+    clip_length: int,
+) -> tuple[int, np.ndarray]:
+    """Build a dense lookup for a contiguous command clip with absolute frame ids."""
+    frame_index = np.asarray(frame_index, dtype=np.int64)
+    if frame_index.ndim != 1 or frame_index.size == 0:
+        raise ValueError("Force-field data must contain at least one frame index.")
+    if clip_length <= 0:
+        raise ValueError(f"Demo clip length must be positive; got {clip_length}.")
+
+    frame_min = int(frame_index.min())
+    frame_max = int(frame_index.max())
+    expected = np.arange(frame_min, frame_max + 1, dtype=np.int64)
+    if frame_index.size != expected.size or not np.array_equal(np.sort(frame_index), expected):
+        raise ValueError(
+            "Force-field frame indices must be unique and contiguous; "
+            f"got {frame_index.size} rows spanning [{frame_min}, {frame_max}]."
+        )
+
+    requested_start = int(frame_offset)
+    requested_end = requested_start + int(clip_length) - 1
+    if requested_start < frame_min or requested_end > frame_max:
+        raise ValueError(
+            "Force-field data does not cover the requested demo clip: "
+            f"requested [{requested_start}, {requested_end}], "
+            f"available [{frame_min}, {frame_max}]."
+        )
+
+    frame_to_row = np.full(expected.size, -1, dtype=np.int64)
+    frame_to_row[frame_index - frame_min] = np.arange(frame_index.size, dtype=np.int64)
+    return frame_min, frame_to_row
+
+
 @dataclass(frozen=True)
 class RealtimeForceFieldConfig:
     data_path: str
@@ -37,13 +72,20 @@ class RealtimeForceFieldCommand:
             positions = np.asarray(data["anchor_position_base"], dtype=np.float32)
             normals = np.asarray(data["anchor_normal_base"], dtype=np.float32)
             part_ids = np.asarray(data["part_ids"], dtype=np.int64)
-        if positions.shape != normals.shape or positions.shape[1:] != (len(part_ids), 3):
+        if (
+            positions.ndim != 3
+            or positions.shape != normals.shape
+            or positions.shape[1:] != (len(part_ids), 3)
+            or positions.shape[0] != frame_index.size
+        ):
             raise ValueError("Force-field anchor position, normal, and part shapes do not match.")
 
-        frame_to_row = np.full(int(frame_index.max()) + 1, -1, dtype=np.int64)
-        frame_to_row[frame_index] = np.arange(len(frame_index), dtype=np.int64)
-        if np.any(frame_to_row < 0):
-            raise ValueError("Force-field data must contain contiguous frame indices starting at zero.")
+        demo_positions = self.env.reward_module.demo_tensors["obj_pos"]
+        self.frame_min, frame_to_row = _build_frame_to_row(
+            frame_index,
+            config.frame_offset,
+            int(demo_positions.shape[0]),
+        )
 
         self.positions = torch.from_numpy(positions).to(env.device)
         self.normals = torch.nn.functional.normalize(torch.from_numpy(normals).to(env.device), dim=-1)
@@ -64,8 +106,9 @@ class RealtimeForceFieldCommand:
     @torch.inference_mode()
     def compute(self) -> torch.Tensor:
         reference_frame = self.env.episode_length_buf.long() + int(self.config.frame_offset)
-        reference_frame = reference_frame.clamp(0, self.frame_to_row.shape[0] - 1)
-        rows = self.frame_to_row[reference_frame]
+        reference_row = reference_frame - self.frame_min
+        reference_row = reference_row.clamp(0, self.frame_to_row.shape[0] - 1)
+        rows = self.frame_to_row[reference_row]
         positions = self.positions[rows]
         normals = self.normals[rows]
 

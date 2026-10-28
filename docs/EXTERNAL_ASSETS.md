@@ -1,6 +1,6 @@
 # External Data and Asset Downloads
 
-FoLD does not rehost third-party simulator models or datasets. The public [DexMachina repository](https://github.com/MandiZhao/dexmachina) says its authors released dexterous-hand and ARCTIC assets used in their preprint, and its tree contains those files. That establishes what DexMachina publishes; it does not by itself establish that FoLD has permission to mirror or redistribute each third-party asset. Obtain assets from their original source or the upstream research repository only under the terms that apply to you. Do not add raw/processed ARCTIC sequences, retargeted trajectories, generated force arrays, checkpoints, logs, or real-world arm-scene recordings to FoLD.
+The reviewed FoLD candidate tree tracks the three processed ARCTIC-derived examples and three paired retarget trajectories listed in [`EXAMPLE_DATA.md`](EXAMPLE_DATA.md). It does not include ARCTIC raw downloads or third-party static hand/object simulator models. The public [DexMachina repository](https://github.com/MandiZhao/dexmachina) says its authors released dexterous-hand and ARCTIC assets used in their preprint, and its tree contains those files. That establishes what DexMachina publishes; it does not by itself establish that FoLD has permission to mirror or redistribute each third-party asset. Obtain assets from their original source or the upstream research repository only under the terms that apply to you. Do not add ARCTIC raw downloads or additional derived sequences/retargets, generated force arrays, checkpoints, logs, or real-world arm-scene recordings to FoLD without reviewing their source terms. The six example files listed in `EXAMPLE_DATA.md` are already tracked in the reviewed candidate tree; this statement does not establish permission to redistribute them.
 
 ## Required for the paper-matched Inspire + ARCTIC pipeline
 
@@ -10,7 +10,7 @@ FoLD does not rehost third-party simulator models or datasets. The public [DexMa
 | Inspire hand description and meshes | [Inspire Robot](https://www.inspire-robots.com/), [DexSuite dex-urdf](https://github.com/dexsuite/dex-urdf), and the [DexMachina asset tree](https://github.com/MandiZhao/dexmachina/tree/main/dexmachina/assets/inspire_hand) | DexSuite lists the Inspire model as CC BY-NC-SA 4.0. FoLD's local URDF variants include simulator edits; confirm the exact files' provenance, provide attribution, and meet the license's noncommercial/share-alike conditions before redistributing them. |
 | MANO hand model, when using MANO retargeting | [MANO project site](https://mano.is.tuebingen.mpg.de/) | Registration and acceptance of the model license are required. Download it yourself; do not redistribute the model files. |
 
-The core examples require static object and hand models plus separately obtained ARCTIC sequences. DexMachina's release announcement explicitly says its authors released hand and ARCTIC assets for their preprint, but that does not establish that FoLD may rehost those assets. The ARCTIC license specifically restricts third-party distribution; obtain written permission before including its meshes or derived assets in FoLD. Follow each model source's notices and terms.
+Running the included processed/retarget examples requires the static object and hand models; the raw ARCTIC sequence is needed only to regenerate the processed example or prepare another sequence. DexMachina's release announcement explicitly says its authors released hand and ARCTIC assets for their preprint, but that does not establish that FoLD may rehost those assets. The ARCTIC license specifically restricts third-party distribution; obtain written permission before including its meshes or derived assets in FoLD. Follow each model source's notices and terms.
 
 ## Optional hand models
 
@@ -30,7 +30,7 @@ Some upstream collections aggregate assets with different licenses. For example,
 
 ## Local directory layout
 
-Keep the downloaded files out of Git and install them locally using the paths expected by the checked-out configuration. The main reproduction walkthrough uses:
+Keep separately downloaded models out of Git and install them locally using the paths expected by the checked-out configuration. The current FoLD-adapted Inspire URDFs add wrist joints/inertial data and use selected DexSuite GLB visual meshes; `notes_inspire.md` records these local changes. The exact upstream package revision for this adaptation is not pinned in the repository, so record the source revision and SHA256 when preparing a new copy. The main reproduction walkthrough uses:
 
 ```text
 fold/assets/
@@ -43,7 +43,12 @@ fold/assets/
 │   ├── mixer/
 │   ├── ...
 │   └── processed/s01/       # locally prepared sequence .npy files
-├── inspire_hand/            # selected Inspire URDF revision and meshes
+├── inspire_hand/
+│   ├── left_xyz_copy.urdf, right_xyz_copy.urdf
+│   ├── handleft01151/meshes/{base_link,Link11..Link22}.STL
+│   ├── handright01091/meshes/{base_link,Link11..Link22}.STL
+│   ├── dexurdf_visual/       # left/right GLB files referenced by these URDFs
+│   └── retarget_config.yaml  # only needed to regenerate retargets
 ├── mano_hand/               # only when the applicable MANO assets are authorized
 ├── plane/                   # simple project ground-plane mesh/URDF
 └── retargeted/inspire_hand/s01/  # locally generated retarget result files
@@ -51,4 +56,4 @@ fold/assets/
 
 Use the repository's expected relative mesh paths or update the local URDF paths. Keep source notices and license files alongside the downloaded assets. Before running, check that the selected URDF's joint names, mesh paths, units, collision geometry, and inertial values match the FoLD hand/object configuration. The upstream model may need a local simulator-compatibility conversion; keep that conversion and its provenance documented locally.
 
-The ignored `fold/assets/` path is populated locally by each user after obtaining models/data under the applicable terms. Follow [`ENVIRONMENT_SETUP_AND_REPRODUCTION.md`](ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for expected paths. No real-world arm scenes, robot-arm trajectories, camera recordings, or sensor recordings are needed for this simulation reproduction.
+The local models and any additional sequences in `fold/assets/` must be obtained under their applicable terms. The reviewed candidate Git tree tracks exactly the three processed sequences and three derived retarget files listed in [`EXAMPLE_DATA.md`](EXAMPLE_DATA.md); these files remain subject to ARCTIC terms. Follow [`ENVIRONMENT_SETUP_AND_REPRODUCTION.md`](ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for expected paths. No real-world arm scenes, robot-arm trajectories, camera recordings, or sensor recordings are needed for this simulation reproduction.

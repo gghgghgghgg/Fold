@@ -1381,6 +1381,61 @@ class ContinuousA2CBase(A2CBase):
 
         uenv = self.vec_env.env.unwrapped
 
+        def check_stopping_conditions(epoch_num):
+            should_stop = False
+            has_rewards = self.game_rewards.current_size > 0
+            mean_rewards = self.game_rewards.get_mean() if has_rewards else -np.inf
+
+            if epoch_num >= self.max_epochs and self.max_epochs != -1:
+                if not has_rewards:
+                    print('WARNING: Max epochs reached before any env terminated at least once')
+                self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(epoch_num) \
+                    + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
+                print('MAX EPOCHS NUM!')
+                should_stop = True
+
+            if (
+                epoch_num > 2500
+                and not uenv.use_curriculum
+                and not self.config.get('disable_low_reward_early_stop', False)
+            ):
+                if not has_rewards:
+                    print('WARNING: No rewards recorded')
+                    should_stop = True
+                elif mean_rewards[0] < 35:
+                    print('Reward too low, stopping')
+                    should_stop = True
+                    self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(epoch_num) \
+                        + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
+
+            zero_stop_epochs = self.config.get('curriculum_zero_stop_epochs', 1500)
+            if (
+                uenv.use_curriculum
+                and zero_stop_epochs >= 0
+                and uenv.curriculum.num_epoch_since_zero > zero_stop_epochs
+            ):
+                print(f'Curriculum zero gains for {zero_stop_epochs} epochs now, stopping')
+                should_stop = True
+                self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(epoch_num) \
+                    + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
+
+            if self.frame >= self.max_frames and self.max_frames != -1:
+                if not has_rewards:
+                    print('WARNING: Max frames reached before any env terminated at least once')
+                self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_frame_' + str(self.frame) \
+                    + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
+                print('MAX FRAMES NUM!')
+                should_stop = True
+
+            return should_stop
+
+        def sync_should_exit(should_exit):
+            if self.multi_gpu:
+                should_exit_t = torch.tensor(should_exit, device=self.device).float()
+                dist.broadcast(should_exit_t, 0)
+                should_exit = should_exit_t.bool().item()
+            return bool(should_exit)
+
         while True:
             epoch_num = self.update_epoch()
             if epoch_num % self.record_freq == 0 or epoch_num == 1:
@@ -1393,6 +1448,8 @@ class ContinuousA2CBase(A2CBase):
                 # self.reset_envs() # new: reset all the envs after curriculum change
             step_time, play_time, update_time, sum_time, a_losses, c_losses, b_losses, entropies, kls, last_lr, lr_mul = self.train_epoch()
             total_time += sum_time
+            curr_frames = self.curr_frames * self.world_size if self.multi_gpu else self.curr_frames
+            self.frame += curr_frames
             frame = self.frame // self.num_agents
 
             # cleaning memory to optimize space
@@ -1409,7 +1466,16 @@ class ContinuousA2CBase(A2CBase):
                             # print('saving next best rewards: ', mean_rewards)
                             self.last_mean_rewards = mean_rewards[0]
                             self.save(os.path.join(self.nn_dir, self.config['name']))
+                            if 'score_to_win' in self.config and self.last_mean_rewards > self.config['score_to_win']:
+                                checkpoint_name = self.config['name'] + '_ep_' + str(epoch_num) + '_rew_' + str(mean_rewards[0])
+                                print('Maximum reward achieved. Network won!')
+                                self.save(os.path.join(self.nn_dir, checkpoint_name))
+                                should_exit = True
                     # self.algo_observer.clear_logs() # not saving the ep_infos before logging
+                    should_exit = check_stopping_conditions(epoch_num) or should_exit
+                    should_exit = sync_should_exit(should_exit)
+                    if should_exit:
+                        return self.last_mean_rewards, epoch_num
                     continue
 
                 # log video
@@ -1424,8 +1490,6 @@ class ContinuousA2CBase(A2CBase):
                 # do we need scaled_time?
                 scaled_time = self.num_agents * sum_time
                 scaled_play_time = self.num_agents * play_time
-                curr_frames = self.curr_frames * self.world_size if self.multi_gpu else self.curr_frames
-                self.frame += curr_frames
 
                 print_statistics(self.print_stats, curr_frames, step_time, scaled_play_time, scaled_time,
                                 epoch_num, self.max_epochs, frame, self.max_frames)
@@ -1488,61 +1552,10 @@ class ContinuousA2CBase(A2CBase):
                                 should_exit = True
                 # print(f"wandb logging: {tolog}")
                 wandb.log(tolog)
-                if epoch_num >= self.max_epochs and self.max_epochs != -1:
-                    if self.game_rewards.current_size == 0:
-                        print('WARNING: Max epochs reached before any env terminated at least once')
-                        mean_rewards = -np.inf
-
-                    self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(epoch_num) \
-                        + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
-                    print('MAX EPOCHS NUM!')
-                    should_exit = True
-
-                # add an early stop if reward is too low:
-                if (
-                    epoch_num > 2500
-                    and not uenv.use_curriculum
-                    and not self.config.get('disable_low_reward_early_stop', False)
-                ):
-                    if self.game_rewards.current_size == 0:
-                        print('WARNING: No rewards recorded')
-                        mean_rewards = -np.inf
-                        should_exit = True
-                    elif mean_rewards[0] < 35:
-                        print('Reward too low, stopping')
-                        should_exit = True
-                        self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(epoch_num) \
-                            + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
-                # also early stop if gains are 0:
-                zero_stop_epochs = self.config.get('curriculum_zero_stop_epochs', 1500)
-                if (
-                    uenv.use_curriculum
-                    and zero_stop_epochs >= 0
-                    and uenv.curriculum.num_epoch_since_zero > zero_stop_epochs
-                ):
-                    print(f'Curriculum zero gains for {zero_stop_epochs} epochs now, stopping')
-                    should_exit = True
-                    self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(epoch_num) \
-                        + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
-
-                if self.frame >= self.max_frames and self.max_frames != -1:
-                    if self.game_rewards.current_size == 0:
-                        print('WARNING: Max frames reached before any env terminated at least once')
-                        mean_rewards = -np.inf
-
-                    self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_frame_' + str(self.frame) \
-                        + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
-                    print('MAX FRAMES NUM!')
-                    should_exit = True
+                should_exit = check_stopping_conditions(epoch_num) or should_exit
 
                 update_time = 0
 
-            if self.multi_gpu:
-                should_exit_t = torch.tensor(should_exit, device=self.device).float()
-                dist.broadcast(should_exit_t, 0)
-                should_exit = should_exit_t.float().item()
-            if should_exit:
-                return self.last_mean_rewards, epoch_num
-
+            should_exit = sync_should_exit(should_exit)
             if should_exit:
                 return self.last_mean_rewards, epoch_num

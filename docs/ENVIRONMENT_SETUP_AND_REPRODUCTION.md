@@ -1,6 +1,6 @@
 # FoLD Environment Setup and Reproduction
 
-Follow the steps in order. Commands use the Box `s01/use_01` example. Install authorized data and models locally; this repository does not bundle ARCTIC sequences or third-party hand/object models. See [External Assets](EXTERNAL_ASSETS.md) for source links and paths.
+Install the environment and prepare the required static assets first. For the included Box `s01/use_01` example, use the fast path in Section 3; for a new sequence or rebuilt trajectory, follow its preprocessing steps. The reviewed candidate revision tracks three processed ARCTIC-derived sequences and three paired Inspire retarget files; it does not include ARCTIC raw downloads, third-party hand/object models, or training checkpoints. Confirm that the exact repository revision you cloned contains the examples listed in [Example Data](EXAMPLE_DATA.md). ARCTIC-derived files remain subject to their source terms; see [External Assets](EXTERNAL_ASSETS.md) before redistributing them.
 
 ## 1. Install the environment
 
@@ -22,19 +22,23 @@ export SETUPTOOLS_USE_DISTUTILS=stdlib
 export WANDB_MODE=offline
 ```
 
-Reference environment: Linux, Python 3.10, PyTorch 2.5.1 + CUDA 12.4, Genesis 0.3.3. Run the following checks from the repository root:
+Keep the retargeting package versions from `requirements-runtime.txt`: `dex-retargeting` 0.4.6 is pinned for this NumPy 1.26 environment. Version 0.5.0 requires NumPy 2 or newer.
+
+Reference environment: Ubuntu Linux, Python 3.10, PyTorch 2.5.1 + CUDA 12.4, Genesis 0.3.3, and an NVIDIA driver compatible with CUDA 12.4. GPU smoke used a small batch and does not establish the memory requirement for the reference B=128/B=4096 runs. Start with a supported single GPU; reduce the environment batch only as an explicitly changed experiment setting and record it. Multi-GPU support is not established by this guide. Run the following checks from the repository root:
 
 ```bash
 nvidia-smi
 python -c 'import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())'
-python -c 'import genesis, igl, cv2; print("imports OK")'
+python -c 'import genesis, igl, cv2; import rl_games; print("runtime imports OK")'
 python -m pytest -q fold/tests
 python -m compileall -q fold stage1 stage2 force_command_estimator global_anchor_force_field
 ```
 
+A successful environment check prints CUDA availability as `True`, imports the runtime modules, and completes pytest with exit code 0. If the machine has no CUDA-capable GPU, Python package and CPU unit checks can still run, but GPU training is not validated.
+
 ## 2. Place local data and models
 
-FoLD reads local inputs from `fold/assets/`. This directory is Git-ignored. Obtain files under their source terms and preserve the expected names and subdirectories.
+FoLD reads inputs from `fold/assets/`. The three processed sequences and three retarget trajectories in [Example Data](EXAMPLE_DATA.md) are tracked in the reviewed candidate tree. Other downloaded models and local files may be Git-ignored. Obtain and use every external file under its source terms; keep the expected names and subdirectories.
 
 ```text
 fold/assets/
@@ -52,21 +56,40 @@ fold/assets/arctic/box/decomp/box_decomp.urdf
 fold/assets/arctic/box/bottom_watertight_tiny.stl
 fold/assets/arctic/box/top_watertight_tiny.stl
 fold/assets/arctic/processed/s01/box_use_01.npy
-fold/assets/inspire_hand/...
+fold/assets/inspire_hand/left_xyz_copy.urdf
+fold/assets/inspire_hand/right_xyz_copy.urdf
+fold/assets/inspire_hand/handleft01151/meshes/{base_link,Link11..Link22}.STL
+fold/assets/inspire_hand/handright01091/meshes/{base_link,Link11..Link22}.STL
+fold/assets/inspire_hand/dexurdf_visual/<GLB files referenced by the URDFs>
+fold/assets/inspire_hand/retarget_config.yaml  # only when regenerating retarget
 fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt
 ```
 
-Read the ARCTIC and model-source terms before downloading. Do not add ARCTIC sequences, retarget files, or other restricted assets to Git without permission. The [asset guide](EXTERNAL_ASSETS.md) lists source URLs and local paths.
+The runtime hand configuration loads `left_xyz_copy.urdf` and `right_xyz_copy.urdf`, whose package references require the listed STL and GLB trees. `retarget_config.yaml` is used only to regenerate retarget trajectories; it is not needed to load the supplied `.pt` trajectory for training. These URDFs are FoLD-adapted files: they add wrist joints/inertial data and use selected DexSuite GLB visual meshes. The exact upstream hand package revision used to create this local adaptation is not recorded, so a current upstream download is not guaranteed to be a drop-in replacement. Keep its source revision and file hashes with any locally prepared copy. Read all source terms before use; the [asset guide](EXTERNAL_ASSETS.md) lists sources and paths.
 
 ## 3. Process an ARCTIC sequence
 
-Install and run ARCTIC preprocessing in its own ARCTIC environment. From the ARCTIC repository root:
+### Fast path for the included Box example
+
+Use the Box processed sequence and full-sequence `para` retarget provided in the repository. When reproducing with this example, skip the ARCTIC raw-data preprocessing, FoLD conversion, and retarget generation below. For a new sequence, add its processed file and generate the matching full-sequence retarget, then follow the preprocessing steps. In either case, you still need the Box simulator model, both Inspire hand models, and the ARCTIC Box object templates used to generate anchors. Run the asset check from the repository root:
+
+```bash
+python tools/check_reproduction_assets.py \
+  --arctic-root /path/to/arctic_data
+```
+
+The check verifies the Box URDF mesh references, Inspire runtime URDF meshes, object templates, and that the processed sequence and retarget cover frames `[0,230)`. To recreate the retarget file, also install `retarget_config.yaml` and run with `--regenerate-retarget`; that configuration is not required when using the included retarget trajectory. For a new sequence or regenerated data, continue with the ARCTIC steps below.
+
+Follow the [ARCTIC installation and data instructions](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md) and run its preprocessing in a separate `arctic` environment. DexMachina's [ARCTIC data processing guide](https://mandizhao.github.io/dexmachina-docs/2_process_demo.html) shows the same raw-data-to-processed-sequence workflow. Download the required raw sequence using the instructions for your ARCTIC checkout.
+
+For the Box `s01/use_01` example, the raw file is `downloads/data/raw_seqs/s01/box_use_01.mano.npy`. From the ARCTIC repository root:
 
 ```bash
 export ARCTIC_REPO=/path/to/arctic
 cd "$ARCTIC_REPO"
+conda activate arctic
 python scripts_data/process_seqs.py \
-  --mano_p ./data/arctic_data/data/raw_seqs/s01/box_use_01.mano.npy \
+  --mano_p downloads/data/raw_seqs/s01/box_use_01.mano.npy \
   --export_verts
 ```
 
@@ -76,10 +99,20 @@ The expected intermediate file is:
 outputs/processed_verts/seqs/s01/box_use_01.npy
 ```
 
-Run FoLD conversion from the FoLD repository root and its environment:
+To inspect the processed sequence with ARCTIC's viewer:
+
+```bash
+python scripts_data/visualizer.py \
+  --no_image \
+  --seq_p outputs/processed_verts/seqs/s01/box_use_01.npy \
+  --mano --object
+```
+
+Convert the ARCTIC output to FoLD's expected format from the FoLD repository root and environment:
 
 ```bash
 cd /path/to/FoLD
+conda activate fold
 export ARCTIC_INTERMEDIATE="$ARCTIC_REPO/outputs/processed_verts/seqs/s01/box_use_01.npy"
 python fold/retargeting/process_arctic.py \
   --processed_fname "$ARCTIC_INTERMEDIATE" --save \
@@ -218,3 +251,12 @@ python fold/rl/eval_rl_games.py \
 ```
 
 Keep the matching clip, seed, environment file, and evaluation options for each method. The output directory contains the summary and per-frame evaluation data.
+
+
+## Troubleshooting
+
+- **CUDA unavailable:** run `nvidia-smi`, then check `torch.cuda.is_available()` and `torch.version.cuda`. Confirm the installed NVIDIA driver supports the CUDA wheel selected above. A successful CPU test does not validate GPU training.
+- **`rl_games` import fails:** run from the repository root after exporting `PYTHONPATH="$PWD/rl_games:$PWD${PYTHONPATH:+:$PYTHONPATH}"`; do not install a different PyPI `rl-games` package over the vendored source.
+- **Missing model/retarget file:** run the `test -s` checks in the relevant section and verify the exact subject, object, sequence, and retarget suffix. Generate FoLD processed data and full-sequence retarget output using their separate documented steps.
+- **Numba cache is not writable:** point `NUMBA_CACHE_DIR` to a writable local directory, for example `export NUMBA_CACHE_DIR="$PWD/.cache/numba"`, then retry. Treat `NUMBA_DISABLE_JIT=1` as a diagnostic workaround only; it can change runtime performance.
+- **Out of memory:** reduce `-B` and rerun as a changed configuration, recording the new value. Do not assume a small smoke batch predicts the memory needed by the reference configuration.

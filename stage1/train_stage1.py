@@ -23,6 +23,7 @@ from fold.envs.constructors import get_all_env_cfg, get_common_argparser, parse_
 from fold.envs.math_utils import matrix_from_quat
 from fold.envs.reward_utils import rotation_distance
 from fold.envs.rewards import RewardModule
+from fold.rl.ppo_config import configure_ppo_rollout
 from fold.rl.rl_games_wrapper import RlGamesGpuEnv, RlGamesVecEnvWrapper
 from stage1.network_builder import Stage1SemanticBuilder
 from stage1.obs_spec import build_stage1_obs_spec
@@ -588,6 +589,8 @@ def _install_stage1_gt_object_overlap_patch():
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    if args.horizon <= 0:
+        parser.error("--horizon must be positive")
 
     obj_name, start, end, subject_name, use_clip = parse_clip_string(args.clip)
     args.arctic_object = obj_name
@@ -639,7 +642,6 @@ def main():
     agent_cfg["params"]["config"]["full_experiment_name"] = exp_name
     agent_cfg["params"]["config"]["max_epochs"] = int(args.max_epochs)
     agent_cfg["params"]["config"]["save_frequency"] = int(args.save_freq)
-    agent_cfg["params"]["config"]["num_steps_per_env"] = args.horizon
     agent_cfg["params"]["config"]["learning_rate"] = args.learning_rate
 
     rl_device = agent_cfg["params"]["config"]["device"]
@@ -653,8 +655,9 @@ def main():
     )
     env_configurations.register("rlgpu", {"vecenv_type": "IsaacRlgWrapper", "env_creator": lambda **kwargs: wrapped_env})
 
-    agent_cfg["params"]["config"]["num_actors"] = wrapped_env.unwrapped.num_envs
-    agent_cfg["params"]["config"]["minibatch_size"] = int(args.num_envs * 8)
+    num_actors = int(wrapped_env.unwrapped.num_envs)
+    agent_cfg["params"]["config"]["num_actors"] = num_actors
+    configure_ppo_rollout(agent_cfg["params"]["config"], num_actors, args.horizon)
     agent_cfg["params"]["config"]["mini_epochs"] = max(1, int(args.num_envs / 4096 * 5))
 
     env_save_kwargs = env_kwargs.copy()

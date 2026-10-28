@@ -1,12 +1,12 @@
 # FoLD 环境与复现指南
 
-本文给出一条可审计的参考流程：Stage 1 → GT 力场命令与 128D 编码器 → Stage 2 residual + curriculum → 确定性完整 clip eval。当前候选 Git 快照暂不分发仿真手部/物体模型，须待逐项确认授权后再纳入；ARCTIC演示数据、训练权重以及真机场景里的机械臂轨迹、相机/传感器采集等数据不由本仓库分发。本指南不把缺失数据伪装成仓库自带内容。
+本文给出参考流程：Stage 1 → GT 力场命令与 128D 编码器 → Stage 2 residual + curriculum → 确定性完整 clip eval。当前候选 Git 树跟踪了 Box、Ketchup、Notebook 三条 ARCTIC 派生 processed 序列及各自 Inspire retarget 轨迹；原始 ARCTIC 下载、仿真手部/物体模型、训练权重和真机场景机械臂/相机/传感器数据不在这六个示例文件内。请查看[示例数据清单](EXAMPLE_DATA.md)及[外部资产说明](EXTERNAL_ASSETS.md)，并核对所克隆版本和适用许可。
 
-环境安装命令见仓库首页；集中式训练脚本示例见 [`training/README.md`](../training/README.md)。序列、retarget 结果和本地模型均按下文放在 `fold/assets/` 约定目录，不随源码仓库提交。
+环境安装命令见仓库首页；集中式训练脚本示例见 [`training/README.md`](../training/README.md)。当前候选 Git 树中的六个示例文件已列于 `docs/EXAMPLE_DATA.md`；其他本地模型和训练产物按下文路径准备。
 
 ## 1. 参考环境
 
-已记录的研究服务器配置：Ubuntu Linux、Python 3.10、NVIDIA GPU、PyTorch 2.5.1 + CUDA 12.4、Genesis 0.3.3、仓库内 vendored rl-games 1.6.1。驱动版本须兼容 CUDA 12.4；建议使用单卡先跑 smoke test。消费级 GPU 的显存需求随 `-B`（并行环境数）变化，正式设置 `Stage 1 B=128`、`Stage 2 B=4096` 可能需要多卡或降低 batch 并重新验证结果。
+已记录的研究服务器配置：Ubuntu Linux、Python 3.10、NVIDIA GPU、PyTorch 2.5.1 + CUDA 12.4、Genesis 0.3.3、仓库内 vendored rl-games 1.6.1。驱动版本须兼容 CUDA 12.4；建议使用单卡先跑 smoke test。显存需求随 `-B`（并行环境数）和场景资产变化。小 batch smoke 不代表正式配置的显存需求；多卡启动方式尚未在本指南中验证。显存不足时可降低 batch，但这属于配置变更，需重新记录并验证。
 
 在 Linux 克隆仓库并建立 Python 3.10 环境：
 
@@ -41,11 +41,11 @@ nvidia-smi
 
 ## 2. 外部数据与资产清单
 
-训练前先依据数据集/资产自身许可取得文件。仓库不会分发训练演示、ARCTIC 原始数据或 checkpoint。请从[ARCTIC 官方项目页](https://arctic.is.tue.mpg.de/)申请数据，并参考上游[下载/解包说明](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md)。ARCTIC 官方 Data & Software License 对数据及派生文件的第三方提供有限制；使用前阅读[数据许可](https://github.com/zc-alexfan/arctic/blob/master/LICENSE)，不要把序列、retarget 轨迹或从其生成的训练数据提交到 FoLD 仓库。
+训练前先依据数据集/资产自身许可取得文件。当前候选 Git 树已跟踪[数据清单](EXAMPLE_DATA.md)列出的三条 processed 序列和三条派生 retarget 轨迹；不包含 ARCTIC 原始下载或训练 checkpoint。ARCTIC 官方 Data & Software License 对数据及派生文件的第三方提供有限制；使用前阅读[许可](https://github.com/zc-alexfan/arctic/blob/master/LICENSE)，并在分发包含这些样例的版本前确认适用授权。其他序列请从[ARCTIC 官方项目页](https://arctic.is.tue.mpg.de/)申请，并参考上游[下载/解包说明](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md)。
 
 ### 从 ARCTIC 原始序列生成 FoLD processed 文件
 
-你记得的 ARCTIC 预处理是有的：官方 `scripts_data/process_seqs.py --export_verts` 先把 raw MANO 序列处理成顶点中间文件；随后 FoLD 的 [`process_arctic.py`](../fold/retargeting/process_arctic.py) 读取该中间文件，计算手物接触字段、把物体平移从毫米转成米、生成四元数，并写出训练环境使用的 `params + world_coord` 字典。ARCTIC 官方[下载/预处理文档](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md)描述了下载、解包和第一步处理；下载前仍须按 ARCTIC/MANO 许可申请并获取所需模型。
+ARCTIC 官方 `scripts_data/process_seqs.py --export_verts` 先把 raw MANO 序列处理成顶点中间文件；随后 FoLD 的 [`process_arctic.py`](../fold/retargeting/process_arctic.py) 读取该中间文件，计算手物接触字段、把物体平移从毫米转成米、生成四元数，并写出训练环境使用的 `params + world_coord` 字典。ARCTIC 官方[下载/预处理文档](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md)描述了下载、解包和第一步处理；下载前仍须按 ARCTIC/MANO 许可申请并获取所需模型。
 
 先在 ARCTIC 仓库根目录、其单独配置好的环境中执行：
 
@@ -61,6 +61,7 @@ python scripts_data/process_seqs.py \
 
 ```bash
 cd /path/to/FoLD
+conda activate fold
 export ARCTIC_INTERMEDIATE="$ARCTIC_REPO/outputs/processed_verts/seqs/s01/box_use_01.npy"
 python fold/retargeting/process_arctic.py \
   --processed_fname "$ARCTIC_INTERMEDIATE" --save \
@@ -71,7 +72,7 @@ python fold/retargeting/process_arctic.py \
 
 ### 2.1 本地数据目录与准备顺序（Box-200 示例）
 
-FoLD 目前按固定相对路径读取序列。克隆后在仓库根目录创建以下本地目录；把自己有权使用的项目兼容 processed sequence 和 retarget 轨迹放到这里。以下内容均被 `.gitignore` 排除，只供当前机器训练，不会随源码提交：
+FoLD 目前按固定相对路径读取序列。当前候选 Git 树跟踪了 Box、Ketchup、Notebook 三条 processed sequence 及对应 `para` retarget 文件；详见[示例数据清单](EXAMPLE_DATA.md)。其他序列和本地模型按以下约定放置。Git 忽略规则不改变已跟踪文件的状态；每次发布前应检查实际提交的文件清单和适用许可：
 
 ```text
 fold/assets/arctic/processed/s01/box_use_01.npy
@@ -138,15 +139,17 @@ test -s fold/assets/arctic/box/top_watertight_tiny.stl || \
 
 **anchor 文件必须在当前机器本地重新生成。**缓存 `.npz` 会记录生成时 OBJ 的路径；从别的机器复制过来的缓存若包含 Windows/旧机器绝对路径，命令生成会因 mesh 无法读取而失败。生成后检查 `mesh_paths` 均能在当前系统访问，再运行 GT command 步骤。不要仅因为旧 `.npz` 存在就跳过这一步。
 
-ARCTIC processed/retarget、anchors、force commands 和训练输出路径已在候选 `.gitignore` 中排除。不要用 `git add -f` 强行加入这些文件；公开源码仓库应只提交准备流程和代码，不提交 ARCTIC 数据或其派生训练数据。
+额外生成的 ARCTIC processed/retarget 文件、anchors、force commands 和训练输出路径由候选 `.gitignore` 排除；`docs/EXAMPLE_DATA.md`列出的六个样例是当前候选树中已跟踪的例外。发布者必须检查实际提交的文件清单，并在分发这些 ARCTIC 派生文件前核实授权。
 
 至少需要：
+
+Box样例已包含processed和retarget数据；静态仿真模型与用于生成anchor的ARCTIC object templates仍需在本机准备。参考主指南中的资产检查脚本。
 
 | 输入 | 用途 | 常见位置/格式 |
 |---|---|---|
 | ARCTIC demonstration | 每帧 MANO/object 目标状态 | `fold/assets/arctic/processed/<subject>/<object>_<task>.npy`（由使用者本地准备） |
 | 对象 URDF、视觉/碰撞 mesh、材质纹理 | Genesis 仿真、锚点与渲染 | 从经授权来源单独获取并放置到 `fold/assets/arctic/<object>/`；当前候选 Git 快照未包含 |
-| Inspire 仿真手部 URDF/mesh/config | 双手仿真 | 从经授权来源单独获取并放置到 `fold/assets/inspire_hand/`；当前候选 Git 快照未包含 |
+| Inspire 仿真手部 URDF/mesh | 双手仿真 | `left_xyz_copy.urdf`、`right_xyz_copy.urdf`，以及各自URDF引用的 `handleft01151/meshes/`、`handright01091/meshes/` STL和`dexurdf_visual/` GLB；当前Git快照不包含这些静态模型。`retarget_config.yaml`仅在重新生成retarget时需要 |
 | 真机场景机械臂轨迹、相机/传感器记录 | 不属于仿真策略复现必需输入 | 不纳入 GitHub |
 | retarget trajectory | Stage 1/2 手部目标轨迹 | `fold/assets/retargeted/inspire_hand/<subject>/<object>_use_01_vector_<retarget>.pt` |
 | surface anchor 文件 | GT 命令求解及 realtime 场 | `global_anchor_force_field/data/<object>_global_anchors_*.npz`（在本机生成） |
@@ -231,12 +234,12 @@ python stage1/train_stage1.py \
   --overlap_grid_pitch 0.002 -exp "fold_stage1_box200"
 ```
 
-在 `logs/rl_games/inspire_hand/` 下找到本次 run 的 epoch-1000 `.pth`，检查对应 `params/agent.yaml`、`params/env.pkl` 和 obs spec；明确记录 checkpoint 路径和 SHA256。以下命令假设路径保存在 `BASE_CHECKPOINT`：
+在 `logs/rl_games/inspire_hand/` 下找到本次 run 的 epoch-1000 `.pth`，检查对应 `params/agent.yaml`、`params/env.pkl` 和 obs spec；明确记录 checkpoint 路径和 SHA256。以下命令将该路径保存在 `STAGE1_CHECKPOINT`：
 
 ```bash
-export BASE_CHECKPOINT=/path/to/stage1_epoch_1000.pth
-test -f "$BASE_CHECKPOINT"
-sha256sum "$BASE_CHECKPOINT"
+export STAGE1_CHECKPOINT=/path/to/stage1_epoch_1000.pth
+test -f "$STAGE1_CHECKPOINT"
+sha256sum "$STAGE1_CHECKPOINT"
 ```
 
 ### 4.3 训练 128D field encoder
@@ -255,7 +258,7 @@ python stage2/train_stage2.py \
   --hand inspire_hand --clip "$CLIP" -rn "$RETARGET" \
   -B 4096 -am hybrid -imi 0.3 -imv 0.1 -bc 0.3 -con 3.0 -ho 16 \
   --seed 42 \
-  -me 10000 -sf 1000 --base_checkpoint "$BASE_CHECKPOINT" \
+  -me 10000 -sf 1000 --base_checkpoint "$STAGE1_CHECKPOINT" \
   --stage2_residual_scale 0.1 --use_curriculum \
   --realtime_force_field_cmd --field_command_data "$COMMANDS" \
   --field_encoder_checkpoint "$ENCODER_DIR/best_field_encoder.pt" \
@@ -266,22 +269,24 @@ python stage2/train_stage2.py \
 
 ### 4.5 确定性完整 clip 评估
 
-使用训练 run 保存的环境参数和选定 checkpoint；固定 seed 42、关闭对象执行器增益、同一完整帧范围及成功阈值。评估入口参数随版本可能变化，先执行 `python fold/rl/eval_rl_games.py --help`。当前入口支持 `--object_control_mode zero`、`--seed 42`、`--position_success_threshold 0.15`、`--rotation_success_threshold_deg 40`、`--env_params_from`、`--eval_method` 和 `--checkpoint_role`。示例：
+使用 Stage 2 checkpoint 和其训练 run 保存的环境参数；评估 Stage 1 policy 时才使用 Stage 1 checkpoint。固定 seed 42、关闭对象执行器增益、同一完整帧范围及成功阈值。评估入口参数随版本可能变化，先执行 `python fold/rl/eval_rl_games.py --help`。当前入口支持 `--object_control_mode zero`、`--seed 42`、`--position_success_threshold 0.15`、`--rotation_success_threshold_deg 40`、`--env_params_from`、`--eval_method` 和 `--checkpoint_role`。示例：
 
 ```bash
+export STAGE2_CHECKPOINT=/path/to/stage2_checkpoint.pth
+export STAGE2_ENV=/path/to/stage2_run/params/env.pkl
 python fold/rl/eval_rl_games.py \
-  --hand inspire_hand --clip "$CLIP" --checkpoint "$BASE_CHECKPOINT" \
-  --env_params_from /path/to/stage2/params/env.pkl \
+  --hand inspire_hand --clip "$CLIP" --checkpoint "$STAGE2_CHECKPOINT" \
+  --env_params_from "$STAGE2_ENV" \
   --object_control_mode zero --seed 42 \
   --position_success_threshold 0.15 --rotation_success_threshold_deg 40 \
   --eval_task_name box-200 --eval_method ours --checkpoint_role best
 ```
 
-对 Stage 2 policy，应将 `--checkpoint` 指向 Stage 2 `.pth`；Stage 1 checkpoint 仅用于训练初始化。保存完整命令、配置、checkpoint epoch/SHA256、逐帧 NPY/NPZ 和 `metrics_summary.json`。baseline 与 ours 必须使用相同 env、trajectory、seed 和终止规则，不能把训练期间的最佳 checkpoint 与另一方法的 final checkpoint 混为同一选择规则。
+对 Stage 2 policy，`--checkpoint` 与 `--env_params_from` 应分别指向 Stage 2 `.pth` 和同一 Stage 2 run 的 `params/env.pkl`；Stage 1 checkpoint 仅作为 Stage 2 训练初始化。保存完整命令、配置、checkpoint epoch/SHA256、逐帧 NPY/NPZ 和 `metrics_summary.json`。baseline 与 ours 必须使用相同 env、trajectory、seed 和终止规则，不能把训练期间的最佳 checkpoint 与另一方法的 final checkpoint 混为同一选择规则。
 
 ## 5. 完整可复现性的边界
 
 - Python 依赖版本是参考锁定，不保证不同 GPU、驱动、Genesis kernel 或不同 ARCTIC 资产版本获得逐 bit 相同结果。
 - 训练入口可运行不代表原始论文结果自动复现；必须固定资产版本、clip、seed、checkpoint selection、课程状态以及 eval 条件。
 - Stage 1、force-command generation、encoder、Stage 2 和 eval 各阶段应分别保存 config、输入 hash、命令和输出 hash。
-- 开源首发前，`fold/assets/` 当前已跟踪的大量第三方几何/手模型资产仍需逐项授权审核；README/requirements 的整理本身不等于发布许可审核通过。
+- 当前候选 Git 树跟踪了 `docs/EXAMPLE_DATA.md` 列出的六个 ARCTIC 派生文件；本地仿真手部和物体模型需从外部来源另行准备。Git 跟踪状态不代表已获再分发许可，发布者应在分发前核验序列及模型各自适用的授权。

@@ -23,6 +23,7 @@ if str(REPO_ROOT) not in sys.path:
 from fold.asset_utils import get_rl_config_path
 from fold.envs.base_env import BaseEnv
 from fold.envs.constructors import get_all_env_cfg, get_common_argparser, parse_clip_string
+from fold.rl.ppo_config import configure_ppo_rollout
 from fold.rl.rl_games_wrapper import RlGamesGpuEnv, RlGamesVecEnvWrapper
 from stage1.train_stage1 import (
     _install_stage1_velocity_reward_patch,
@@ -208,6 +209,8 @@ def _resolve_wandb_mode() -> str | None:
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    if args.horizon <= 0:
+        parser.error("--horizon must be positive")
     if args.use_curriculum:
         args.actuate_object = True
     if args.realtime_wrench_cmd and args.realtime_force_field_cmd:
@@ -325,7 +328,6 @@ def main():
     agent_cfg["params"]["config"]["full_experiment_name"] = exp_name
     agent_cfg["params"]["config"]["max_epochs"] = int(args.max_epochs)
     agent_cfg["params"]["config"]["save_frequency"] = int(args.save_freq)
-    agent_cfg["params"]["config"]["num_steps_per_env"] = args.horizon
     agent_cfg["params"]["config"]["learning_rate"] = args.learning_rate
     agent_cfg["params"]["config"]["disable_low_reward_early_stop"] = bool(args.disable_low_reward_early_stop)
     agent_cfg["params"]["config"]["curriculum_zero_stop_epochs"] = int(args.curriculum_zero_stop_epochs)
@@ -341,8 +343,9 @@ def main():
     )
     env_configurations.register("rlgpu", {"vecenv_type": "IsaacRlgWrapper", "env_creator": lambda **kwargs: wrapped_env})
 
-    agent_cfg["params"]["config"]["num_actors"] = wrapped_env.unwrapped.num_envs
-    agent_cfg["params"]["config"]["minibatch_size"] = int(args.num_envs * 8)
+    num_actors = int(wrapped_env.unwrapped.num_envs)
+    agent_cfg["params"]["config"]["num_actors"] = num_actors
+    configure_ppo_rollout(agent_cfg["params"]["config"], num_actors, args.horizon)
     agent_cfg["params"]["config"]["mini_epochs"] = (
         args.mini_epochs if args.mini_epochs is not None else max(1, int(args.num_envs / 4096 * 5))
     )

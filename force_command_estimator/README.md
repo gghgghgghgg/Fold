@@ -9,7 +9,7 @@
 - `train_field_encoder.py`：训练 field encoder，输出 `best_field_encoder.pt` 和归一化参数。
 - `stage2/realtime_force_field.py`：Stage 2 中在线计算力场并生成 128D latent；采用全局 active top-k anchor 选择。
 
-早期 GRU 受力估计实验、GT-reset 对比、GPU benchmark 和静态 latent 导出不是当前 pipeline 必需项，已按用户决定从工作树删除。
+本目录保留当前流程必需的 GT 力场命令生成与 128D PointNet encoder 训练实现。历史 GRU 估计器、GT-reset 对比、GPU benchmark 和静态 latent 导出工具不属于当前 pipeline，当前候选中不提供这些工具。
 
 ## 生成 GT 力场命令
 
@@ -18,7 +18,7 @@
 ```bash
 python force_command_estimator/generate_gt_commands.py \
   --anchors global_anchor_force_field/data/box_global_anchors_200.npz \
-  --urdf fold/assets/arctic/box/box.urdf \
+  --urdf fold/assets/arctic/box/decomp/box_decomp.urdf \
   --target-q /path/to/authorized/box_target_q.npy \
   --start-frame 30 --num-frames 200 --active-top-k 60 \
   --topk-method normal_prefit \
