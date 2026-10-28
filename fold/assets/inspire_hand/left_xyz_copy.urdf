@@ -1,0 +1,554 @@
+<robot name="handleft01151">
+  <link name="root">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="L_forearm_tx_link_joint" type="prismatic">
+    <parent link="L_forearm_tx_link"/>
+    <child link="L_forearm_ty_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-5.0" upper="5.0" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_forearm_tx_link">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="L_forearm_ty_link_joint" type="prismatic">
+    <parent link="L_forearm_ty_link"/>
+    <child link="L_forearm_tz_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-5.0" upper="5.0" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_forearm_ty_link">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="L_forearm_tz_link_joint" type="prismatic">
+    <parent link="L_forearm_tz_link"/>
+    <child link="L_forearm_roll_link"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-5.0" upper="5.0" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_forearm_tz_link">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="L_forearm_roll_link_joint" type="revolute">
+    <parent link="L_forearm_roll_link"/>
+    <child link="L_forearm_pitch_link"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-6.2" upper="6.2" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_forearm_roll_link">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="L_forearm_pitch_link_joint" type="revolute">
+    <parent link="L_forearm_pitch_link"/>
+    <child link="L_forearm_yaw_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-6.2" upper="6.2" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_forearm_pitch_link">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="L_forearm_yaw_link_joint" type="revolute">
+    <parent link="L_forearm_yaw_link"/>
+    <child link="base_link"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-6.2" upper="6.2" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_forearm_yaw_link">
+    <mass value="0.01"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1E-06" ixy="0" ixz="0" iyy="1E-06" iyz="0" izz="1E-06"/>
+    </inertial>
+  </link>
+  <joint name="fixed" type="fixed">
+    <parent link="root"/>
+    <child link="L_forearm_tx_link"/>
+  </joint>
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.0014004 -0.052388 -0.0022404" rpy="0 0 0"/>
+      <mass value="0.41"/>
+      <inertia ixx="9.814E-05" ixy="3.1871E-06" ixz="-1.475E-06" iyy="6.4612E-05" iyz="2.4108E-06" izz="5.5131E-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/base_link.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.82745 0.83922 0.82745 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/base_link.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="L_TH_L1">
+    <inertial>
+      <origin xyz="0.0048817 0.00038782 -0.00722" rpy="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="5.5158E-08" ixy="-1.1803E-08" ixz="-4.6743E-09" iyy="8.2164E-08" iyz="-1.3521E-09" izz="6.7434E-08"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_thumb_proximal_base.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="0.82745 0.83922 0.82745 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link11.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_TH_J1" type="revolute">
+    <origin xyz="-0.01496 -0.0375 0.02045" rpy="1.5708 -1.5708 0"/>
+    <parent link="base_link"/>
+    <child link="L_TH_L1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="1.30" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_TH_L2">
+    <inertial>
+      <origin xyz="0.021936 -0.01279 -0.0080386" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.5693E-06" ixy="7.8339E-07" ixz="8.5953E-10" iyy="1.7356E-06" iyz="1.038E-09" izz="2.787E-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_thumb_proximal.glb"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link12.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_TH_J2" type="revolute">
+    <origin xyz="0.0099867 0.0098242 -0.0089" rpy="-1.5708 0 0.16939"/>
+    <parent link="L_TH_L1"/>
+    <child link="L_TH_L2"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0" upper="0.68" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_TH_L3">
+    <inertial>
+      <origin xyz="0.0095531 0.0016282 -0.0072002" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="3.6981E-07" ixy="9.8603E-08" ixz="-2.6496E-12" iyy="3.2395E-07" iyz="-2.5911E-12" izz="4.6532E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_thumb_intermediate.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link13.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_TH_J3" type="revolute">
+    <origin xyz="0.04407 -0.034553 -0.0008" rpy="0 0 0"/>
+    <parent link="L_TH_L2"/>
+    <child link="L_TH_L3"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.2" upper="0.8" effort="50" velocity="0.1"/>
+    <mimic joint="L_TH_J2" multiplier="1" offset="0"/>
+  </joint>
+  <link name="L_TH_L4">
+    <inertial>
+      <origin xyz="0.0092888 -0.004953 -0.0060033" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="1.3632E-07" ixy="5.6787E-08" ixz="-9.1939E-11" iyy="1.4052E-07" iyz="1.2145E-10" izz="2.0026E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_thumb_distal.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link14.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_TH_J4" type="revolute">
+    <origin xyz="0.020248 -0.010156 -0.0012" rpy="0 0 0"/>
+    <parent link="L_TH_L3"/>
+    <child link="L_TH_L4"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.20" upper="0.85" effort="50" velocity="0.1"/>
+    <mimic joint="L_TH_J2" multiplier="1.13" offset="0"/>
+  </joint>
+  <link name="L_FF_L1">
+    <inertial>
+      <origin xyz="0.0012971 -0.011934 -0.0059998" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="6.6215E-07" ixy="1.8442E-08" ixz="1.371E-12" iyy="2.1167E-07" iyz="-1.478E-11" izz="6.9402E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_index_proximal.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link15.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_FF_J1" type="revolute">
+    <origin xyz="0.0022853 -0.10493 0.032268" rpy="-0.034907 0 0"/>
+    <parent link="base_link"/>
+    <child link="L_FF_L1"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0" upper="1.62" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_FF_L2">
+    <inertial>
+      <origin xyz="0.0021753 -0.019567 -0.005" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="7.6284E-07" ixy="-8.063E-08" ixz="3.6826E-13" iyy="9.4308E-08" iyz="1.5653E-13" izz="7.8176E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_index_intermediate.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link16.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_FF_J2" type="revolute">
+    <origin xyz="-0.0024229 -0.032041 -0.001" rpy="0 0 0"/>
+    <parent link="L_FF_L1"/>
+    <child link="L_FF_L2"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.20" upper="2.0" effort="50" velocity="0.1"/>
+    <mimic joint="L_FF_J1" multiplier="1.13" offset="0"/>
+  </joint>
+  <link name="L_MF_L1">
+    <inertial>
+      <origin xyz="0.0012971 -0.011934 -0.0059999" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="6.6215E-07" ixy="1.8442E-08" ixz="1.2364E-12" iyy="2.1167E-07" iyz="-1.4492E-11" izz="6.9402E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_index_proximal.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link17.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_MF_J1" type="revolute">
+    <origin xyz="0.0022853 -0.1055 0.01295" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="L_MF_L1"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0" upper="1.62" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_MF_L2">
+    <inertial>
+      <origin xyz="0.001921 -0.020796 -0.0049999" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="9.5823E-07" ixy="-1.1425E-07" ixz="-2.4186E-12" iyy="1.0646E-07" iyz="3.6974E-12" izz="9.8385E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_middle_intermediate.glb"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.82745 0.83922 0.82745 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link18.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_MF_J2" type="revolute">
+    <origin xyz="-0.0024229 -0.032041 -0.001" rpy="0 0 0"/>
+    <parent link="L_MF_L1"/>
+    <child link="L_MF_L2"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.20" upper="1.90" effort="50" velocity="0.1"/>
+    <mimic joint="L_MF_J1" multiplier="1.13" offset="0"/>
+  </joint>
+  <link name="L_RF_L1">
+    <inertial>
+      <origin xyz="0.0012971 -0.011934 -0.0059999" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="6.6215E-07" ixy="1.8442E-08" ixz="9.5121E-13" iyy="2.1167E-07" iyz="-1.4131E-11" izz="6.9402E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_index_proximal.glb"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link19.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_RF_J1" type="revolute">
+    <origin xyz="0.0022853 -0.10531 -0.0062872" rpy="0.05236 0 0"/>
+    <parent link="base_link"/>
+    <child link="L_RF_L1"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0" upper="1.62" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_RF_L2">
+    <inertial>
+      <origin xyz="0.0021753 -0.019567 -0.005" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="7.6285E-07" ixy="-8.0631E-08" ixz="3.3688E-14" iyy="9.4308E-08" iyz="-4.4838E-13" izz="7.8176E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_index_intermediate.glb" />
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link20.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_RF_J2" type="revolute">
+    <origin xyz="-0.0024229 -0.032041 -0.001" rpy="0 0 0"/>
+    <parent link="L_RF_L1"/>
+    <child link="L_RF_L2"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.2" upper="1.9" effort="50" velocity="0.1"/>
+    <mimic joint="L_RF_J1" multiplier="1.08" offset="0"/>
+  </joint>
+  <link name="L_LF_L1">
+    <inertial>
+      <origin xyz="0.0012971 -0.011934 -0.0059999" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="6.6215E-07" ixy="1.8442E-08" ixz="9.9696E-13" iyy="2.1167E-07" iyz="-1.429E-11" izz="6.9402E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_index_proximal.glb"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link21.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_LF_J1" type="revolute">
+    <origin xyz="0.0022853 -0.10411 -0.025488" rpy="0.10472 0 0"/>
+    <parent link="base_link"/>
+    <child link="L_LF_L1"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0" upper="1.62" effort="50" velocity="0.1"/>
+  </joint>
+  <link name="L_LF_L2">
+    <inertial>
+      <origin xyz="0.0024788 -0.016208 -0.0050001" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="4.3923E-07" ixy="-4.1355E-08" ixz="1.2263E-12" iyy="7.0315E-08" iyz="3.1311E-12" izz="4.4881E-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dexurdf_visual/left_pinky_intermediate.glb"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://handleft01151/meshes/Link22.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L_LF_J2" type="revolute">
+    <origin xyz="-0.0024229 -0.032041 -0.001" rpy="0 0 0"/>
+    <parent link="L_LF_L1"/>
+    <child link="L_LF_L2"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.2" upper="2.1" effort="50" velocity="0.1"/>
+    <mimic joint="L_LF_J1" multiplier="1.13" offset="0"/>
+  </joint>
+  <link name="L_TH_Tip">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.004"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="L_TH_JT" type="fixed">
+    <origin xyz="0.0178 -0.011 -0.006" rpy="0 0 0"/>
+    <parent link="L_TH_L4"/>
+    <child link="L_TH_Tip"/>
+  </joint>
+  <link name="L_FF_Tip">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.004"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="L_FF_JT" type="fixed">
+    <origin xyz="-0.0008 -0.041 -0.005" rpy="0 0 0"/>
+    <parent link="L_FF_L2"/>
+    <child link="L_FF_Tip"/>
+  </joint>
+  <link name="L_MF_Tip">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.004"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="L_MF_JT" type="fixed">
+    <origin xyz="-0.0015 -0.0445 -0.005" rpy="0 0 0"/>
+    <parent link="L_MF_L2"/>
+    <child link="L_MF_Tip"/>
+  </joint>
+  <link name="L_RF_Tip">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.004"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="L_RF_JT" type="fixed">
+    <origin xyz="-0.0008 -0.041 -0.005" rpy="0 0 0"/>
+    <parent link="L_RF_L2"/>
+    <child link="L_RF_Tip"/>
+  </joint>
+  <link name="L_LF_Tip">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.004"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="L_LF_JT" type="fixed">
+    <origin xyz="-0.0002 -0.0333 -0.005" rpy="0 0 0"/>
+    <parent link="L_LF_L2"/>
+    <child link="L_LF_Tip"/>
+  </joint>
+</robot>

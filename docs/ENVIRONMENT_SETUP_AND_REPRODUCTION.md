@@ -1,6 +1,6 @@
 # FoLD Environment Setup and Reproduction
 
-Install the environment and prepare the required static assets first. For the included Box `s01/use_01` example, use the fast path in Section 3; for a new sequence or rebuilt trajectory, follow its preprocessing steps. 
+Install the environment, then prepare the ARCTIC sequence you want to use. The repository includes the Inspire hand model and currently tracks three processed examples with paired retarget trajectories. Follow [ARCTIC Data Preparation](EXTERNAL_ASSETS.md) to download and convert another sequence into the expected location. The ARCTIC data and its derived files remain subject to their source terms.
 
 ## 1. Install the environment
 
@@ -36,85 +36,19 @@ python -m compileall -q fold stage1 stage2 force_command_estimator global_anchor
 
 A successful environment check prints CUDA availability as `True`, imports the runtime modules, and completes pytest with exit code 0. If the machine has no CUDA-capable GPU, Python package and CPU unit checks can still run, but GPU training is not validated.
 
-## 2. Place local data and models
+## 2. ARCTIC sequence data
 
-FoLD reads inputs from `fold/assets/`. The three processed sequences and three retarget trajectories in [Example Data](EXAMPLE_DATA.md) are tracked in the reviewed candidate tree. Other downloaded models and local files may be Git-ignored. Obtain and use every external file under its source terms; keep the expected names and subdirectories.
-
-```text
-fold/assets/
-├── arctic/
-│   ├── box/                         # object URDF, collision/visual meshes
-│   └── processed/s01/               # FoLD-processed sequence .npy files
-├── inspire_hand/                    # hand URDF and meshes
-└── retargeted/inspire_hand/s01/      # full-sequence retarget .pt files
-```
-
-For the example, prepare these paths:
+The repository includes the Inspire runtime hand model. Download and preprocess the ARCTIC sequence you want to use, then save its FoLD-converted file under:
 
 ```text
-fold/assets/arctic/box/decomp/box_decomp.urdf
-fold/assets/arctic/box/bottom_watertight_tiny.stl
-fold/assets/arctic/box/top_watertight_tiny.stl
-fold/assets/arctic/processed/s01/box_use_01.npy
+fold/assets/arctic/processed/<subject>/<object>_<action>.npy
 ```
 
-The runtime hand configuration loads `left_xyz_copy.urdf` and `right_xyz_copy.urdf`, whose package references require the listed STL and GLB trees. `retarget_config.yaml` is used only to regenerate retarget trajectories; it is not needed to load the supplied `.pt` trajectory for training. These URDFs are FoLD-adapted files: they add wrist joints/inertial data and use selected DexSuite GLB visual meshes. The exact upstream hand package revision used to create this local adaptation is not recorded, so a current upstream download is not guaranteed to be a drop-in replacement. Keep its source revision and file hashes with any locally prepared copy. Read all source terms before use; the [asset guide](EXTERNAL_ASSETS.md) lists sources and paths.
+For example: `fold/assets/arctic/processed/s01/box_use_01.npy`. Follow [ARCTIC Data Preparation](EXTERNAL_ASSETS.md). Existing examples are listed in [Example Data](EXAMPLE_DATA.md).
 
-## 3. Process an ARCTIC sequence
+## 3. Prepare a sequence and retarget
 
-### Fast path for the included Box example
-
-Use the Box processed sequence and full-sequence `para` retarget provided in the repository. When reproducing with this example, skip the ARCTIC raw-data preprocessing, FoLD conversion, and retarget generation below. For a new sequence, add its processed file and generate the matching full-sequence retarget, then follow the preprocessing steps. In either case, you still need the Box simulator model, both Inspire hand models, and the ARCTIC Box object templates used to generate anchors. Run the asset check from the repository root:
-
-```bash
-python tools/check_reproduction_assets.py \
-  --arctic-root /path/to/arctic_data
-```
-
-The check verifies the Box URDF mesh references, Inspire runtime URDF meshes, object templates, and that the processed sequence and retarget cover frames `[0,230)`. To recreate the retarget file, also install `retarget_config.yaml` and run with `--regenerate-retarget`; that configuration is not required when using the included retarget trajectory. For a new sequence or regenerated data, continue with the ARCTIC steps below.
-
-Follow the [ARCTIC installation and data instructions](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md) and run its preprocessing in a separate `arctic` environment. Download the required raw sequence using the instructions for your ARCTIC checkout.
-
-For the Box `s01/use_01` example, the raw file is `downloads/data/raw_seqs/s01/box_use_01.mano.npy`. From the ARCTIC repository root:
-
-```bash
-export ARCTIC_REPO=/path/to/arctic
-cd "$ARCTIC_REPO"
-conda activate arctic
-python scripts_data/process_seqs.py \
-  --mano_p downloads/data/raw_seqs/s01/box_use_01.mano.npy \
-  --export_verts
-```
-
-The expected intermediate file is:
-
-```text
-outputs/processed_verts/seqs/s01/box_use_01.npy
-```
-
-To inspect the processed sequence with ARCTIC's viewer:
-
-```bash
-python scripts_data/visualizer.py \
-  --no_image \
-  --seq_p outputs/processed_verts/seqs/s01/box_use_01.npy \
-  --mano --object
-```
-
-Convert the ARCTIC output to FoLD's expected format from the FoLD repository root and environment:
-
-```bash
-cd /path/to/FoLD
-conda activate fold
-export ARCTIC_INTERMEDIATE="$ARCTIC_REPO/outputs/processed_verts/seqs/s01/box_use_01.npy"
-python fold/retargeting/process_arctic.py \
-  --processed_fname "$ARCTIC_INTERMEDIATE" --save \
-  --save_dir fold/assets/arctic/processed
-```
-
-This creates `fold/assets/arctic/processed/s01/box_use_01.npy`.
-
-Generate the full-sequence Inspire retarget file if it is not already available:
+For a new sequence, run `fold/retargeting/parallel_retarget.py` from the FoLD environment to create its full-sequence Inspire retarget file. For Box `s01/use_01`:
 
 ```bash
 python fold/retargeting/parallel_retarget.py \
@@ -122,31 +56,7 @@ python fold/retargeting/parallel_retarget.py \
   --retarget_type vector --save --save_name para
 ```
 
-Expected output:
-
-```text
-fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt
-```
-
-Check inputs and frame coverage:
-
-```bash
-test -s fold/assets/arctic/box/decomp/box_decomp.urdf
-test -s fold/assets/arctic/processed/s01/box_use_01.npy
-test -s fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt
-
-python - <<'PY'
-import numpy as np
-import torch
-p = np.load("fold/assets/arctic/processed/s01/box_use_01.npy", allow_pickle=True).item()
-r = torch.load("fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt",
-               map_location="cpu", weights_only=False)
-print("processed frames:", len(p["params"]["obj_trans"]))
-print("retarget frames:", len(r["demo_data"]["obj_pos"]))
-PY
-```
-
-Both files must cover the full clip used below.
+The output is `fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt`. Confirm that both processed data and retarget data cover the complete clip before generating force commands and training.
 
 ## 4. Generate anchors and force commands
 
