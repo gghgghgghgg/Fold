@@ -46,22 +46,6 @@ The [full environment and reproduction guide](docs/ENVIRONMENT_SETUP_AND_REPRODU
 - `fold/`: simulator environment, retargeting, evaluation and focused tests. Licensed robot/object assets are external inputs in this snapshot.
 - `rl_games/`: runtime source needed by the training integration (upstream attribution/license retained).
 
-## Environment and tests
-
-Reference environment: Linux, Python 3.10, NVIDIA GPU, PyTorch 2.5.1 + CUDA 12.4, Genesis 0.3.3. Install the compatible CUDA PyTorch build first, then:
-
-```bash
-python -m pip install -r requirements-runtime.txt
-python -m pip install -r requirements-dev.txt
-export PYTHONPATH="$PWD/rl_games:$PWD"
-export SETUPTOOLS_USE_DISTUTILS=stdlib
-export WANDB_MODE=offline
-python -m pytest -q fold/tests
-python -m compileall -q fold stage1 stage2 force_command_estimator global_anchor_force_field
-```
-
-The tests cover core observation, force-mask and temporal-retarget logic; they do not verify a complete GPU training run. Follow the reproduction guide and check the release-scope notes before redistributing third-party assets.
-
 ## Attribution
 
 Parts of the simulation foundation derive from the upstream DexMachina project; retain its publication citation and license notices. FoLD is the name of this project and repository. Third-party hand models, object assets, and dependencies retain their respective licenses; their presence here is not a relicensing grant.
