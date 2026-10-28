@@ -1,7 +1,5 @@
 # FoLD: Force-field-guided Learning for Dexterous Manipulation
 
-FoLD is a pipeline for dexterous manipulation of articulated objects. This repository contains the training and evaluation code used in our work.
-
 <p align="center">
   <strong>Haowei Shen<sup>1</sup>, Tingai Li<sup>1</sup>, Yumeng Liu<sup>1,*</sup>, Wenyuan Guang<sup>2</sup>,<br>
   Xuanze Yang<sup>1</sup>, Qing Fang<sup>1</sup>, Kai Xu<sup>2,3</sup>, Ligang Liu<sup>1</sup>, Ruizhen Hu<sup>4</sup></strong>
@@ -15,8 +13,10 @@ FoLD is a pipeline for dexterous manipulation of articulated objects. This repos
   <sup>*</sup>Corresponding author: Yumeng Liu (<a href="mailto:lym29@mail.ustc.edu.cn">lym29@mail.ustc.edu.cn</a>)
 </p>
 
+FoLD is a pipeline for dexterous manipulation of articulated objects. This repository contains the training and evaluation code used in our work.
 [Paper (arXiv:2609.33551)](https://arxiv.org/abs/2609.33551) · [Project page](https://gghgghgghgg.github.io/FoLD-project-page/)
 
+![Teaser](dexmachina-teaser-website.png)
 ## Installation
 
 We recommend Linux with Python 3.10. From the repository root:
