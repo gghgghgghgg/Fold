@@ -50,7 +50,3 @@ The [training examples](training/README.md) list the Stage 1, force-field encode
 ## Documentation
 
 See the [environment setup and reproduction guide](docs/ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for data placement, preprocessing, training, and evaluation. Asset sources and licensing notes are listed in [External Assets](docs/EXTERNAL_ASSETS.md).
-
-## Attribution
-
-The simulation foundation includes code derived from [DexMachina](https://github.com/MandiZhao/dexmachina); its license and attribution notices are retained. Third-party assets and dependencies remain subject to their original terms.
