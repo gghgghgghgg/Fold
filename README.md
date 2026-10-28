@@ -16,7 +16,7 @@
 FoLD is a pipeline for dexterous manipulation of articulated objects. This repository contains the training and evaluation code used in our work.
 [Paper (arXiv:2609.33551)](https://arxiv.org/abs/2609.33551) · [Project page](https://gghgghgghgg.github.io/FoLD-project-page/)
 
-![Teaser](Fold_teaser2.png)
+![Teaser](FoLD_teaser2.png)
 ## Installation
 
 We recommend Linux with Python 3.10. From the repository root:
