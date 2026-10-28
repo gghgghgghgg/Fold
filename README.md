@@ -36,7 +36,7 @@ export PYTHONPATH="$PWD/rl_games:$PWD${PYTHONPATH:+:$PYTHONPATH}"
 export SETUPTOOLS_USE_DISTUTILS=stdlib
 export WANDB_MODE=offline
 ```
-
+See the full [documentation](docs/ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for additional installation instructions for dexterous hand. 
 ## Example
 
 After installing the required data and models, run the Box Stage 1 example from the repository root:
