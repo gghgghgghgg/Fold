@@ -2,15 +2,18 @@
 
 FoLD is a pipeline for dexterous manipulation of articulated objects. This repository contains the training and evaluation code used in our work.
 
-**Haowei Shen**$^{1}$, **Tingai Li**$^{1}$, **Yumeng Liu**$^{1,*}$, Wenyuan Guang$^{2}$,<br>
-Xuanze Yang$^{1}$, Qing Fang$^{1}$, Kai Xu$^{2,3}$, Ligang Liu$^{1}$, Ruizhen Hu$^{4}$
+<p align="center">
+  <strong>Haowei Shen<sup>1</sup>, Tingai Li<sup>1</sup>, Yumeng Liu<sup>1,*</sup>, Wenyuan Guang<sup>2</sup>,<br>
+  Xuanze Yang<sup>1</sup>, Qing Fang<sup>1</sup>, Kai Xu<sup>2,3</sup>, Ligang Liu<sup>1</sup>, Ruizhen Hu<sup>4</sup></strong>
+</p>
 
-$^{1}$University of Science and Technology of China<br>
-$^{2}$Institute of AI for Industries, Chinese Academy of Sciences<br>
-$^{3}$Jiangsu Key Laboratory of AI for Industries<br>
-$^{4}$Shenzhen University
-
-$^{*}$Corresponding author: Yumeng Liu ([lym29@mail.ustc.edu.cn](mailto:lym29@mail.ustc.edu.cn)).
+<p align="center">
+  <sup>1</sup>University of Science and Technology of China<br>
+  <sup>2</sup>Institute of AI for Industries, Chinese Academy of Sciences<br>
+  <sup>3</sup>Jiangsu Key Laboratory of AI for Industries<br>
+  <sup>4</sup>Shenzhen University<br><br>
+  <sup>*</sup>Corresponding author: Yumeng Liu (<a href="mailto:lym29@mail.ustc.edu.cn">lym29@mail.ustc.edu.cn</a>)
+</p>
 
 [Paper (arXiv:2609.33551)](https://arxiv.org/abs/2609.33551) · [Project page](https://gghgghgghgg.github.io/FoLD-project-page/)
 
