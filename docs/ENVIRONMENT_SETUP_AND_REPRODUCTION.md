@@ -1,6 +1,6 @@
 # FoLD Environment Setup and Reproduction
 
-Install the environment and prepare the required static assets first. For the included Box `s01/use_01` example, use the fast path in Section 3; for a new sequence or rebuilt trajectory, follow its preprocessing steps. The reviewed candidate revision tracks three processed ARCTIC-derived sequences and three paired Inspire retarget files; it does not include ARCTIC raw downloads, third-party hand/object models, or training checkpoints. Confirm that the exact repository revision you cloned contains the examples listed in [Example Data](EXAMPLE_DATA.md). ARCTIC-derived files remain subject to their source terms; see [External Assets](EXTERNAL_ASSETS.md) before redistributing them.
+Install the environment and prepare the required static assets first. For the included Box `s01/use_01` example, use the fast path in Section 3; for a new sequence or rebuilt trajectory, follow its preprocessing steps. 
 
 ## 1. Install the environment
 
@@ -56,13 +56,6 @@ fold/assets/arctic/box/decomp/box_decomp.urdf
 fold/assets/arctic/box/bottom_watertight_tiny.stl
 fold/assets/arctic/box/top_watertight_tiny.stl
 fold/assets/arctic/processed/s01/box_use_01.npy
-fold/assets/inspire_hand/left_xyz_copy.urdf
-fold/assets/inspire_hand/right_xyz_copy.urdf
-fold/assets/inspire_hand/handleft01151/meshes/{base_link,Link11..Link22}.STL
-fold/assets/inspire_hand/handright01091/meshes/{base_link,Link11..Link22}.STL
-fold/assets/inspire_hand/dexurdf_visual/<GLB files referenced by the URDFs>
-fold/assets/inspire_hand/retarget_config.yaml  # only when regenerating retarget
-fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt
 ```
 
 The runtime hand configuration loads `left_xyz_copy.urdf` and `right_xyz_copy.urdf`, whose package references require the listed STL and GLB trees. `retarget_config.yaml` is used only to regenerate retarget trajectories; it is not needed to load the supplied `.pt` trajectory for training. These URDFs are FoLD-adapted files: they add wrist joints/inertial data and use selected DexSuite GLB visual meshes. The exact upstream hand package revision used to create this local adaptation is not recorded, so a current upstream download is not guaranteed to be a drop-in replacement. Keep its source revision and file hashes with any locally prepared copy. Read all source terms before use; the [asset guide](EXTERNAL_ASSETS.md) lists sources and paths.
@@ -80,7 +73,7 @@ python tools/check_reproduction_assets.py \
 
 The check verifies the Box URDF mesh references, Inspire runtime URDF meshes, object templates, and that the processed sequence and retarget cover frames `[0,230)`. To recreate the retarget file, also install `retarget_config.yaml` and run with `--regenerate-retarget`; that configuration is not required when using the included retarget trajectory. For a new sequence or regenerated data, continue with the ARCTIC steps below.
 
-Follow the [ARCTIC installation and data instructions](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md) and run its preprocessing in a separate `arctic` environment. DexMachina's [ARCTIC data processing guide](https://mandizhao.github.io/dexmachina-docs/2_process_demo.html) shows the same raw-data-to-processed-sequence workflow. Download the required raw sequence using the instructions for your ARCTIC checkout.
+Follow the [ARCTIC installation and data instructions](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md) and run its preprocessing in a separate `arctic` environment. Download the required raw sequence using the instructions for your ARCTIC checkout.
 
 For the Box `s01/use_01` example, the raw file is `downloads/data/raw_seqs/s01/box_use_01.mano.npy`. From the ARCTIC repository root:
 
