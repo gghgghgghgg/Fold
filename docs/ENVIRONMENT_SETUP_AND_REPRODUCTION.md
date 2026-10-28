@@ -2,7 +2,7 @@
 
 This guide describes how to install FoLD and reproduce the pipeline from local, authorized inputs: Stage 1 imitation, object-surface force-command generation, 128D force-field encoder training, Stage 2 residual learning with curriculum, and deterministic full-clip evaluation. The commands use Box-200 as a worked example; reproducing the full study requires repeating the pipeline with the exact hand, object, clip range, seed, and checkpoint-selection rule for each reported experiment.
 
-The repository does not distribute robot/object models pending per-asset redistribution clearance, ARCTIC sequences, processed or retargeted trajectories, generated anchor/force-command arrays, trained checkpoints, experiment logs, or real-world robot-arm recordings. A short Stage 1/Stage 2 smoke test has been run on a local candidate copy, but this is not a clean-machine reproduction of a full training run or a reproduction of the reported results. Required licensed hand and object assets must be obtained separately and installed at the documented paths.
+The repository does not include third-party simulator hand/object models, ARCTIC sequences, processed or retargeted trajectories, generated anchor/force-command arrays, trained checkpoints, experiment logs, or real-world robot-arm recordings. A short Stage 1/Stage 2 smoke test has been run on a local candidate copy, but this is not a clean-machine reproduction of a full training run or a reproduction of the reported results. Obtain required assets separately under their source terms and install them at the documented paths.
 
 ## 1. Pipeline and artifacts
 
@@ -30,6 +30,10 @@ The recorded reference environment is 64-bit Linux, Python 3.10, an NVIDIA GPU w
 | NumPy | 1.26.4 |
 | Gym | 0.23.1 |
 | SciPy | 1.15.3 |
+| scikit-learn | 1.7.2 |
+| OSQP | 1.1.3 |
+| Matplotlib | 3.10.8 |
+| dex-retargeting | 0.5.0 |
 | libigl | 2.5.1 |
 | OpenCV | 4.11.0.86 |
 | `rl_games` | Repository-vendored source; do not replace it with an unrelated PyPI version |
@@ -58,6 +62,8 @@ python -m pip install -r requirements-dev.txt
 ```
 
 The PyTorch command follows the official PyTorch 2.5.1 CUDA 12.4 installation matrix. If the host driver or platform does not support this wheel, stop and resolve the driver/platform mismatch before substituting another CUDA or PyTorch version.
+
+Example Stage 1, field-encoder, and Stage 2 launch scripts are collected in [`training/`](../training/README.md). They assume that the local files under `fold/assets/` and generated command/encoder inputs have already been prepared as described below.
 
 From the repository root, configure the vendored RL package and offline experiment logging:
 
@@ -106,7 +112,33 @@ These checks do not prove that Genesis can initialize the target GPU or that a f
 
 ## 5. Obtain and prepare local data and assets
 
-Obtain ARCTIC data directly under the terms of the [official ARCTIC project](https://arctic.is.tue.mpg.de/) and its [data-processing instructions](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md). Read the [ARCTIC Data & Software License](https://github.com/zc-alexfan/arctic/blob/master/LICENSE) before downloading or using it. The license restricts use to specified non-commercial research, education, or artistic purposes and prohibits making the data and software available to third parties without prior written permission. Do not commit ARCTIC sequences or derived trajectories/commands to the FoLD repository.
+Obtain ARCTIC data directly under the terms of the [official ARCTIC project](https://arctic.is.tue.mpg.de/) and its [data-processing instructions](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md). Read the [ARCTIC Data & Software License](https://github.com/zc-alexfan/arctic/blob/master/LICENSE) before downloading or using it. The license restricts use to specified non-commercial research, education, or artistic purposes and prohibits making the data and software available to third parties without prior written permission. Do not commit ARCTIC sequences or derived trajectories/commands to the FoLD repository. For source links and local asset paths for ARCTIC objects and robot hands, see the [external data and asset download guide](EXTERNAL_ASSETS.md).
+
+### Convert an ARCTIC sequence to FoLD's processed format
+
+ARCTIC provides the first preprocessing step: `scripts_data/process_seqs.py --export_verts` converts a raw MANO sequence to a vertex-export sequence. FoLD's [`process_arctic.py`](../fold/retargeting/process_arctic.py) then consumes that intermediate file, computes hand-object contact fields, converts object translations from millimeters to meters, adds quaternions, and writes the final FoLD dictionary. The [upstream ARCTIC data guide](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md) documents downloading and running its preprocessing script; use its setup instructions and license terms.
+
+Run the ARCTIC command from the ARCTIC repository root, after installing its environment and obtaining the required ARCTIC, MANO, and object model files:
+
+```bash
+export ARCTIC_REPO=/path/to/arctic
+cd "$ARCTIC_REPO"
+python scripts_data/process_seqs.py \
+  --mano_p ./data/arctic_data/data/raw_seqs/s01/box_use_01.mano.npy \
+  --export_verts
+```
+
+The documented output is `outputs/processed_verts/seqs/s01/box_use_01.npy`. Then, from the FoLD repository root, run the FoLD contact/format conversion:
+
+```bash
+cd /path/to/FoLD
+export ARCTIC_INTERMEDIATE="$ARCTIC_REPO/outputs/processed_verts/seqs/s01/box_use_01.npy"
+python fold/retargeting/process_arctic.py \
+  --processed_fname "$ARCTIC_INTERMEDIATE" --save \
+  --save_dir fold/assets/arctic/processed
+```
+
+This writes `fold/assets/arctic/processed/s01/box_use_01.npy`, expected by the training pipeline. Verify its fields and frame count before retargeting or training. The two stages use separate environments: ARCTIC's environment for `process_seqs.py`, and FoLD's environment for `process_arctic.py`.
 
 FoLD expects project-compatible processed data and a full-length retarget trajectory at these relative paths. The files must be prepared locally and are excluded from source control:
 
@@ -128,7 +160,7 @@ cp "$RETARGET_SOURCE/s01/box_use_01_vector_para.pt" \
   fold/assets/retargeted/inspire_hand/s01/
 ```
 
-If starting from upstream ARCTIC data, follow its official processing instructions first. The FoLD `process_arctic.py` helper operates on an intermediate data structure; it is not a raw archive extractor and does not by itself create every field required by the environment. If the retarget result must be regenerated, use the repository retargeting pipeline with a compatible Genesis installation and the complete sequence. For the 889-frame Box example:
+If starting from upstream ARCTIC data, use the two-step conversion above. If the retarget result must be regenerated, use the repository retargeting pipeline with a compatible Genesis installation and the complete sequence. For the 889-frame Box example:
 
 ```bash
 python fold/retargeting/parallel_retarget.py \
@@ -141,7 +173,11 @@ Before training, check the input files and sequence coverage:
 ```bash
 test -s fold/assets/arctic/processed/s01/box_use_01.npy
 test -s fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt
-test -s fold/assets/arctic/box/box.urdf
+test -s fold/assets/arctic/box/decomp/box_decomp.urdf
+test -s fold/assets/arctic/box/bottom_watertight_tiny.stl || \
+  test -s fold/assets/arctic/box/bottom_watertight_tiny.obj
+test -s fold/assets/arctic/box/top_watertight_tiny.stl || \
+  test -s fold/assets/arctic/box/top_watertight_tiny.obj
 
 python - <<'PY'
 import numpy as np
@@ -165,7 +201,7 @@ Set paths for the local inputs and outputs. The ARCTIC object-template meshes mu
 ```bash
 export ARCTIC_ROOT=/path/to/authorized/arctic_data
 export DEMO=fold/assets/arctic/processed/s01/box_use_01.npy
-export OBJECT_URDF="$PWD/fold/assets/arctic/box/box.urdf"
+export OBJECT_URDF="$PWD/fold/assets/arctic/box/decomp/box_decomp.urdf"
 export ANCHORS="$PWD/global_anchor_force_field/data/box_global_anchors_200.npz"
 export TARGET_Q="$PWD/logs/local_data/box_target_q.npy"
 export COMMANDS="$PWD/force_command_estimator/data/box_gt_global_force_commands_full.npz"

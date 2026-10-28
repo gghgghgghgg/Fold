@@ -28,6 +28,8 @@ fold/assets/retargeter_results/
 fold/assets/contact_retarget/
 fold/assets/arctic/processed/
 fold/assets/
+# Third-party models stay local until their exact redistribution permissions
+# are confirmed for the FoLD release.
 force_command_estimator/data/
 force_command_estimator/results/
 global_anchor_force_field/data/

@@ -2,6 +2,8 @@
 
 本文给出一条可审计的参考流程：Stage 1 → GT 力场命令与 128D 编码器 → Stage 2 residual + curriculum → 确定性完整 clip eval。当前候选 Git 快照暂不分发仿真手部/物体模型，须待逐项确认授权后再纳入；ARCTIC演示数据、训练权重以及真机场景里的机械臂轨迹、相机/传感器采集等数据不由本仓库分发。本指南不把缺失数据伪装成仓库自带内容。
 
+环境安装命令见仓库首页；集中式训练脚本示例见 [`training/README.md`](../training/README.md)。序列、retarget 结果和本地模型均按下文放在 `fold/assets/` 约定目录，不随源码仓库提交。
+
 ## 1. 参考环境
 
 已记录的研究服务器配置：Ubuntu Linux、Python 3.10、NVIDIA GPU、PyTorch 2.5.1 + CUDA 12.4、Genesis 0.3.3、仓库内 vendored rl-games 1.6.1。驱动版本须兼容 CUDA 12.4；建议使用单卡先跑 smoke test。消费级 GPU 的显存需求随 `-B`（并行环境数）变化，正式设置 `Stage 1 B=128`、`Stage 2 B=4096` 可能需要多卡或降低 batch 并重新验证结果。
@@ -41,6 +43,32 @@ nvidia-smi
 
 训练前先依据数据集/资产自身许可取得文件。仓库不会分发训练演示、ARCTIC 原始数据或 checkpoint。请从[ARCTIC 官方项目页](https://arctic.is.tue.mpg.de/)申请数据，并参考上游[下载/解包说明](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md)。ARCTIC 官方 Data & Software License 对数据及派生文件的第三方提供有限制；使用前阅读[数据许可](https://github.com/zc-alexfan/arctic/blob/master/LICENSE)，不要把序列、retarget 轨迹或从其生成的训练数据提交到 FoLD 仓库。
 
+### 从 ARCTIC 原始序列生成 FoLD processed 文件
+
+你记得的 ARCTIC 预处理是有的：官方 `scripts_data/process_seqs.py --export_verts` 先把 raw MANO 序列处理成顶点中间文件；随后 FoLD 的 [`process_arctic.py`](../fold/retargeting/process_arctic.py) 读取该中间文件，计算手物接触字段、把物体平移从毫米转成米、生成四元数，并写出训练环境使用的 `params + world_coord` 字典。ARCTIC 官方[下载/预处理文档](https://github.com/zc-alexfan/arctic/blob/master/docs/data/README.md)描述了下载、解包和第一步处理；下载前仍须按 ARCTIC/MANO 许可申请并获取所需模型。
+
+先在 ARCTIC 仓库根目录、其单独配置好的环境中执行：
+
+```bash
+export ARCTIC_REPO=/path/to/arctic
+cd "$ARCTIC_REPO"
+python scripts_data/process_seqs.py \
+  --mano_p ./data/arctic_data/data/raw_seqs/s01/box_use_01.mano.npy \
+  --export_verts
+```
+
+官方脚本输出 `outputs/processed_verts/seqs/s01/box_use_01.npy`。再切换到 FoLD 仓库根目录和 FoLD 环境，生成训练使用的 processed 文件：
+
+```bash
+cd /path/to/FoLD
+export ARCTIC_INTERMEDIATE="$ARCTIC_REPO/outputs/processed_verts/seqs/s01/box_use_01.npy"
+python fold/retargeting/process_arctic.py \
+  --processed_fname "$ARCTIC_INTERMEDIATE" --save \
+  --save_dir fold/assets/arctic/processed
+```
+
+输出路径应为 `fold/assets/arctic/processed/s01/box_use_01.npy`。ARCTIC 预处理和 FoLD 后处理使用各自环境；前者需要 ARCTIC、MANO 及物体模型依赖，后者使用 FoLD runtime 依赖。随后检查字段和帧数，再按下文生成完整序列 retarget。
+
 ### 2.1 本地数据目录与准备顺序（Box-200 示例）
 
 FoLD 目前按固定相对路径读取序列。克隆后在仓库根目录创建以下本地目录；把自己有权使用的项目兼容 processed sequence 和 retarget 轨迹放到这里。以下内容均被 `.gitignore` 排除，只供当前机器训练，不会随源码提交：
@@ -56,7 +84,7 @@ fold/assets/retargeted/inspire_hand/s01/ketchup_use_01_vector_temporal_v1.pt
 fold/assets/retargeted/inspire_hand/s01/notebook_use_01_vector_temporal_v1.pt
 ```
 
-其中 processed `.npy` 必须是本项目可读的字典格式，至少含 `params`（`obj_trans`、`obj_rot`、`obj_arti`、`obj_quat`）和 `world_coord`（双手接触/关键点字段）；不要把官方原始压缩包直接改名当作此文件。若从 ARCTIC 上游原始文件开始，先按其官方数据处理说明生成项目使用的 processed 数据。`fold/retargeting/process_arctic.py` 只适用于已包含 `verts.left/right/object` 与 `parts_ids` 的中间数据，用来补充接触字段；它不是原始数据解包器，也不能单独生成 FoLD 所需的全部 `params/world_coord`。retarget `.pt` 应覆盖序列完整帧，名称中的 `para`/`temporal_v1` 必须与训练命令 `-rn` 一致；不能把某个截取片段的轨迹冒充完整序列。
+其中 processed `.npy` 必须是本项目可读的字典格式，至少含 `params`（`obj_trans`、`obj_rot`、`obj_arti`、`obj_quat`）和 `world_coord`（双手接触/关键点字段）；不要把官方原始压缩包或 ARCTIC 顶点中间文件直接改名当作此文件。按上面的 ARCTIC `process_seqs.py --export_verts` → FoLD `process_arctic.py` 两步生成。retarget `.pt` 应覆盖序列完整帧，名称中的 `para`/`temporal_v1` 必须与训练命令 `-rn` 一致；不能把某个截取片段的轨迹冒充完整序列。
 
 示例：将本机已准备好的文件放入约定目录（请按自己的下载/解压路径修改源路径）：
 
@@ -91,7 +119,11 @@ python fold/retargeting/parallel_retarget.py \
 ```bash
 test -s fold/assets/arctic/processed/s01/box_use_01.npy
 test -s fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt
-test -s fold/assets/arctic/box/box.urdf
+test -s fold/assets/arctic/box/decomp/box_decomp.urdf
+test -s fold/assets/arctic/box/bottom_watertight_tiny.stl || \
+  test -s fold/assets/arctic/box/bottom_watertight_tiny.obj
+test -s fold/assets/arctic/box/top_watertight_tiny.stl || \
+  test -s fold/assets/arctic/box/top_watertight_tiny.obj
 ```
 
 后续由本机生成的文件放在以下目录：
@@ -141,7 +173,7 @@ git diff --check
 
 ```bash
 export ROOT="$PWD"
-export PYTHONPATH="$ROOT"
+export PYTHONPATH="$ROOT/rl_games:$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export SETUPTOOLS_USE_DISTUTILS=stdlib
 export WANDB_MODE=offline
 export OBJECT=box
@@ -149,7 +181,7 @@ export CLIP=box-30-230-s01-use_01
 export RETARGET=para
 export DEMO=/path/to/FoLD/fold/assets/arctic/processed/s01/box_use_01.npy
 export DEMO_Q="$ROOT/logs/local_data/box_target_q.npy"
-export OBJECT_URDF="$ROOT/fold/assets/arctic/box/box.urdf"
+export OBJECT_URDF="$ROOT/fold/assets/arctic/box/decomp/box_decomp.urdf"
 export ANCHORS="$ROOT/global_anchor_force_field/data/box_global_anchors_200.npz"
 export COMMANDS="$ROOT/force_command_estimator/data/box_gt_global_force_commands_full.npz"
 export ENCODER_DIR="$ROOT/force_command_estimator/results/field_encoder/box_pointnet_300e"
@@ -170,7 +202,7 @@ export ARCTIC_ROOT=/path/to/authorized/arctic_data
 python global_anchor_force_field/generate_global_anchors.py \
   --meshes "$ARCTIC_ROOT/data/meta/object_vtemplates/box/bottom.obj" \
            "$ARCTIC_ROOT/data/meta/object_vtemplates/box/top.obj" \
-  --part-names base lid --num-anchors 200 --scale 0.001 \
+  --part-names base lid --num-anchors 200 --scale 0.001 --seed 7 \
   --out "$ANCHORS"
 ```
 
@@ -193,6 +225,7 @@ python force_command_estimator/generate_gt_commands.py \
 python stage1/train_stage1.py \
   --hand inspire_hand --clip "$CLIP" -rn "$RETARGET" \
   -B 128 -am hybrid -imi 0.3 -imv 0.1 -bc 0.3 -ho 4 \
+  --seed 42 \
   -me 1000 -sf 1000 --overlap_geom_penalty 20 \
   --overlap_geom_threshold 0.001 --overlap_inside_backend grid \
   --overlap_grid_pitch 0.002 -exp "fold_stage1_box200"
@@ -221,6 +254,7 @@ test -f "$ENCODER_DIR/best_field_encoder.pt"
 python stage2/train_stage2.py \
   --hand inspire_hand --clip "$CLIP" -rn "$RETARGET" \
   -B 4096 -am hybrid -imi 0.3 -imv 0.1 -bc 0.3 -con 3.0 -ho 16 \
+  --seed 42 \
   -me 10000 -sf 1000 --base_checkpoint "$BASE_CHECKPOINT" \
   --stage2_residual_scale 0.1 --use_curriculum \
   --realtime_force_field_cmd --field_command_data "$COMMANDS" \
