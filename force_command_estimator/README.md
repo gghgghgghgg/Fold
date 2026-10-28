@@ -1,33 +1,31 @@
-# GT 力场命令与 128D Field Encoder
+# Force Commands and 128D Field Encoder
 
-本目录保留当前 Stage 2 pipeline 实际使用的离线 GT command 生成与 PointNet 编码器训练代码。Stage 2 运行时会根据当前仿真状态重新求解 anchor forces，再在线编码成 128D observation；不会依赖预先导出的固定 latent。
+This directory contains the GT force-command generator and PointNet encoder used by Stage 2. Stage 2 solves the force field online from the current simulated object state and encodes it as a 128D observation. It does not use a precomputed latent sequence.
 
-## 核心文件
+## Main files
 
-- `generate_gt_commands.py`：由物体表面 anchors、物体 GT `target_q` 和 URDF 惯量，逐帧优化 force/wrench/generalized command，并保存 anchor 位置、法向、力场和帧索引。
-- `field_encoder.py`：PointNet 风格的逐 anchor 编码器与 autoencoder 模型定义。
-- `train_field_encoder.py`：训练 field encoder，输出 `best_field_encoder.pt` 和归一化参数。
-- `stage2/realtime_force_field.py`：Stage 2 中在线计算力场并生成 128D latent；采用全局 active top-k anchor 选择。
+- `generate_gt_commands.py` creates per-frame force commands from object states, surface anchors, and the object URDF.
+- `field_encoder.py` defines the PointNet encoder.
+- `train_field_encoder.py` trains the encoder.
+- `../stage2/realtime_force_field.py` computes and encodes forces during Stage 2 training.
 
-本目录保留当前流程必需的 GT 力场命令生成与 128D PointNet encoder 训练实现。历史 GRU 估计器、GT-reset 对比、GPU benchmark 和静态 latent 导出工具不属于当前 pipeline，当前候选中不提供这些工具。
+## Generate force commands
 
-## 生成 GT 力场命令
-
-需预先准备对象 anchors、带连续物体状态的 `target_q.npy` 以及正确 URDF。帧 `i` 的输出 command 对应从 `GT[i]` 到 `GT[i+1]` 的转移。
+Prepare an anchor file and a `target_q.npy` containing object states. For the Box clip `[30,230)`:
 
 ```bash
 python force_command_estimator/generate_gt_commands.py \
   --anchors global_anchor_force_field/data/box_global_anchors_200.npz \
   --urdf fold/assets/arctic/box/decomp/box_decomp.urdf \
-  --target-q /path/to/authorized/box_target_q.npy \
+  --target-q /path/to/box_target_q.npy \
   --start-frame 30 --num-frames 200 --active-top-k 60 \
   --topk-method normal_prefit \
   --out force_command_estimator/data/box_gt_global_force_commands_full.npz
 ```
 
-完整序列可将`--num-frames`设为`0`。检查目标 qpos、anchor mesh 的坐标单位及帧编号一致；dataset 与模型权重不随源码发布。
+Each command represents the transition from frame `i` to frame `i+1`. Set `--num-frames 0` to use all remaining transitions. Keep frame indices, object units, and URDF consistent.
 
-## 训练 128D Field Encoder
+## Train the encoder
 
 ```bash
 python force_command_estimator/train_field_encoder.py \
@@ -36,14 +34,10 @@ python force_command_estimator/train_field_encoder.py \
   --out-dir force_command_estimator/results/field_encoder/box_pointnet_300e
 ```
 
-输出的`best_field_encoder.pt`由 Stage 2 的`--field_encoder_checkpoint`读取。
+The output `best_field_encoder.pt` is loaded by Stage 2.
 
-## Stage 2 在线计算
+## Stage 2 integration
 
-开启`--realtime_force_field_cmd`并提供`--field_command_data`和`--field_encoder_checkpoint`后，Stage 2 每个仿真步会：
+Enable `--realtime_force_field_cmd` and provide `--field_command_data` and `--field_encoder_checkpoint`. Stage 2 solves forces on the global anchor set, selects the active top-k anchors, and encodes the result at each simulation step.
 
-1. 根据当前物体状态选择该帧 anchors，并由目标 wrench 求解 anchor forces；
-2. 在全局 anchor 集合上按预拟合力大小选择 active top-k；
-3. 将当前 anchors、法向和求得的 forces 输入 encoder，得到 128D policy observation。
-
-所以，force command 数据生成、field encoder 训练和 Stage 2 在线力场求解/编码是核心；离线预先导出静态 128D latent 不能替代状态相关的在线求解。
+See the [reproduction guide](../docs/ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for the complete workflow. Generated commands and encoder checkpoints are local training outputs and are not included in the source release.
