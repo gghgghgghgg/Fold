@@ -263,6 +263,14 @@ def main() -> None:
     missing = [key for key in required if key not in data]
     if missing:
         raise KeyError(f"dataset is missing {missing}; regenerate commands with generate_gt_commands.py")
+    field_metadata = {}
+    for key in (
+        "method", "radius", "active_top_k", "prefit_iterations", "solver_iterations",
+        "friction", "regularization", "normal_force_limit", "retarget_name", "source_retarget",
+    ):
+        if key in data:
+            value = np.asarray(data[key])
+            field_metadata[key] = value.item() if value.ndim == 0 else value.tolist()
     positions = np.asarray(data["anchor_position_base"], dtype=np.float32)
     normals = np.asarray(data["anchor_normal_base"], dtype=np.float32)
     forces = np.asarray(data["anchor_force_base"], dtype=np.float32)
@@ -406,6 +414,7 @@ def main() -> None:
             "position_scale": position_scale,
             "force_scale": force_scale,
             "wrench_scale": wrench_scale,
+            "field_metadata": field_metadata,
         },
         out_dir / "best_field_encoder.pt",
     )

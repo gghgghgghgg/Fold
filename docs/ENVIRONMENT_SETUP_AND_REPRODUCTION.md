@@ -102,6 +102,16 @@ python force_command_estimator/generate_gt_commands.py \
   --topk-method normal_prefit --out "$COMMANDS"
 ```
 
+The Stage 2 example uses a 15 cm hand-proximity mask. Derive matching force labels from the global wrench commands and the retargeted hand trajectory:
+
+```bash
+export RETARGET_DATA="$PWD/fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_${RETARGET}.pt"
+export MASKED_FIELDS="$PWD/force_command_estimator/data/box_hard15_force_fields.npz"
+python force_command_estimator/derive_hand_distance_field_data.py \
+  --commands "$COMMANDS" --retarget "$RETARGET_DATA" \
+  --out "$MASKED_FIELDS" --method hard15 --radius 0.15 --active-top-k 60
+```
+
 ## 5. Train the example
 
 The launch scripts are collected in [`training/`](../training/README.md). Run each step from the repository root.
@@ -112,11 +122,11 @@ Stage 1:
 bash training/train_stage1_box_example.sh
 ```
 
-Set `BASE_CHECKPOINT` to the selected Stage 1 checkpoint. Train the force-field encoder:
+Set `BASE_CHECKPOINT` to the selected Stage 1 checkpoint. Train the force-field encoder on the derived 15 cm masked fields:
 
 ```bash
-export ENCODER_DIR="$PWD/force_command_estimator/results/field_encoder/box_pointnet_300e"
-COMMANDS="$COMMANDS" OUT_DIR="$ENCODER_DIR" \
+export ENCODER_DIR="$PWD/force_command_estimator/results/field_encoder/box_hard15_pointnet_300e"
+COMMANDS="$MASKED_FIELDS" OUT_DIR="$ENCODER_DIR" \
   bash training/train_field_encoder_box_example.sh
 ```
 
@@ -125,7 +135,7 @@ Stage 2:
 ```bash
 export BASE_CHECKPOINT=/path/to/stage1_checkpoint.pth
 export ENCODER_CHECKPOINT="$ENCODER_DIR/best_field_encoder.pt"
-BASE_CHECKPOINT="$BASE_CHECKPOINT" COMMANDS="$COMMANDS" \
+BASE_CHECKPOINT="$BASE_CHECKPOINT" COMMANDS="$MASKED_FIELDS" \
 ENCODER_CHECKPOINT="$ENCODER_CHECKPOINT" \
   bash training/train_stage2_box_example.sh
 ```

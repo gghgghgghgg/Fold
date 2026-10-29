@@ -7,6 +7,8 @@ import torch
 
 from force_command_estimator.benchmark_gpu_force_field import build_wrench_map, solve_force_field
 from force_command_estimator.field_encoder import FieldAutoencoder
+from fold.envs.math_utils import matrix_from_quat
+from stage2.force_field_mask import hand_proximity_mask, select_hard_mask_topk_with_fallback
 from stage2.realtime_wrench import RealtimeWrenchCommand, RealtimeWrenchConfig
 
 
@@ -52,11 +54,21 @@ class RealtimeForceFieldConfig:
     frame_offset: int = 0
     prefit_iterations: int = 8
     active_top_k: int = 60
+    hand_mask_radius: float = 0.0
+    retarget_name: str | None = None
     iterations: int = 32
     friction: float = 0.5
     regularization: float = 1e-4
     normal_force_limit: float = 100.0
     wrench: RealtimeWrenchConfig = RealtimeWrenchConfig()
+
+
+def realtime_force_field_config_from_payload(payload: dict) -> RealtimeForceFieldConfig:
+    """Restore saved configs without changing legacy global-anchor checkpoints."""
+    config = dict(payload)
+    config.setdefault("hand_mask_radius", 0.0)
+    wrench = RealtimeWrenchConfig(**config.pop("wrench", {}))
+    return RealtimeForceFieldConfig(**config, wrench=wrench)
 
 
 class RealtimeForceFieldCommand:
@@ -65,6 +77,8 @@ class RealtimeForceFieldCommand:
     def __init__(self, env, config: RealtimeForceFieldConfig):
         self.env = env
         self.config = config
+        if config.hand_mask_radius < 0:
+            raise ValueError("hand_mask_radius must be non-negative")
         self.wrench_command = RealtimeWrenchCommand(env, config.wrench)
 
         with np.load(config.data_path, allow_pickle=False) as data:
@@ -93,6 +107,35 @@ class RealtimeForceFieldCommand:
         self.frame_to_row = torch.from_numpy(frame_to_row).to(env.device)
 
         checkpoint = torch.load(config.encoder_checkpoint, map_location="cpu", weights_only=False)
+        field_metadata = checkpoint.get("field_metadata", {})
+        if field_metadata:
+            expected = {
+                "radius": config.hand_mask_radius,
+                "active_top_k": config.active_top_k,
+                "prefit_iterations": config.prefit_iterations,
+                "solver_iterations": config.iterations,
+                "friction": config.friction,
+                "regularization": config.regularization,
+                "normal_force_limit": config.normal_force_limit,
+            }
+            mismatches = {
+                key: (field_metadata[key], value)
+                for key, value in expected.items()
+                if key in field_metadata and not np.isclose(float(field_metadata[key]), float(value))
+            }
+            if mismatches:
+                raise ValueError(
+                    "Field encoder training metadata does not match Stage 2 runtime config "
+                    f"(trained, runtime): {mismatches}"
+                )
+            if field_metadata.get("method") == "hard15" and config.hand_mask_radius <= 0:
+                raise ValueError("A hard15 encoder requires an enabled hand mask at runtime.")
+            metadata_retarget = field_metadata.get("retarget_name")
+            if config.retarget_name and metadata_retarget and config.retarget_name != metadata_retarget:
+                raise ValueError(
+                    "Field encoder retarget does not match Stage 2 runtime "
+                    f"({metadata_retarget!r} != {config.retarget_name!r})."
+                )
         model = FieldAutoencoder(
             num_parts=int(checkpoint["num_parts"]),
             latent_dim=int(checkpoint["latent_dim"]),
@@ -120,7 +163,37 @@ class RealtimeForceFieldCommand:
         wrench_map = build_wrench_map(positions)
         solve_normals = normals
         use_top_k = 0 < self.config.active_top_k < normals.shape[1]
-        if use_top_k:
+        if self.config.hand_mask_radius > 0:
+            object_rotation = matrix_from_quat(self.wrench_command.object.root_quat)
+            anchor_positions_world = self.wrench_command.object.root_pos[:, None, :] + torch.einsum(
+                "bij,baj->bai", object_rotation, positions
+            )
+            hand_points_world = torch.cat(
+                (self.env.robots["left"].kpt_pos, self.env.robots["right"].kpt_pos), dim=1
+            )
+            candidate_mask = hand_proximity_mask(
+                anchor_positions_world, hand_points_world, self.config.hand_mask_radius
+            )
+            local_prefit = solve_force_field(
+                wrench_map, normals * candidate_mask.unsqueeze(-1), target_wrench,
+                self.config.prefit_iterations, self.config.friction,
+                self.config.regularization, self.config.normal_force_limit,
+            )
+            local_scores = local_prefit.norm(dim=-1)
+            if use_top_k:
+                global_prefit = solve_force_field(
+                    wrench_map, normals, target_wrench,
+                    self.config.prefit_iterations, self.config.friction,
+                    self.config.regularization, self.config.normal_force_limit,
+                )
+                global_scores = global_prefit.norm(dim=-1)
+            else:
+                global_scores = local_scores
+            selected_mask = select_hard_mask_topk_with_fallback(
+                local_scores, candidate_mask, self.config.active_top_k, global_scores
+            )
+            solve_normals = normals * selected_mask.unsqueeze(-1)
+        elif use_top_k:
             prefit_forces = solve_force_field(
                 wrench_map,
                 normals,

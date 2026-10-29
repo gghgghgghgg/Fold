@@ -235,7 +235,7 @@ def load_agent_cfg(ckpt_path):
     return agent_cfg
 
 
-def install_stage2_observation_extensions(env, agent_cfg):
+def install_stage2_observation_extensions(env, agent_cfg, retarget_name_override=None):
     obs_spec = agent_cfg.get("params", {}).get("network", {}).get("stage2_obs_spec")
     if not obs_spec:
         return
@@ -245,8 +245,10 @@ def install_stage2_observation_extensions(env, agent_cfg):
 
         install_realtime_wrench_observation(env, RealtimeWrenchConfig())
     if "realtime_force_field" in field_names:
-        from stage2.realtime_force_field import RealtimeForceFieldConfig, install_realtime_force_field_observation
-        from stage2.realtime_wrench import RealtimeWrenchConfig
+        from stage2.realtime_force_field import (
+            install_realtime_force_field_observation,
+            realtime_force_field_config_from_payload,
+        )
 
         network_cfg = agent_cfg.get("params", {}).get("network", {})
         saved_cfg = network_cfg.get("realtime_force_field_config")
@@ -257,14 +259,12 @@ def install_stage2_observation_extensions(env, agent_cfg):
                 "frame_offset": 30,
                 "wrench": {},
             }
-        field_kwargs = dict(saved_cfg)
-        wrench_kwargs = field_kwargs.pop("wrench", {})
+        if retarget_name_override is not None:
+            saved_cfg = dict(saved_cfg)
+            saved_cfg["retarget_name"] = retarget_name_override
         install_realtime_force_field_observation(
             env,
-            RealtimeForceFieldConfig(
-                **field_kwargs,
-                wrench=RealtimeWrenchConfig(**wrench_kwargs),
-            ),
+            realtime_force_field_config_from_payload(saved_cfg),
         )
 
 
@@ -604,7 +604,7 @@ def main():
         _disable_object_collisions_runtime(env)
     agent_cfg = load_agent_cfg(ckpt_path)
     agent_cfg["params"]["seed"] = int(args.seed)
-    install_stage2_observation_extensions(env, agent_cfg)
+    install_stage2_observation_extensions(env, agent_cfg, args.retarget_name_override)
     demo_data = env_kwargs['demo_data']
     obj_state_tensor = gather_object_state_tensor(demo_data)
 

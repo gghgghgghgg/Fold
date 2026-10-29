@@ -1,6 +1,6 @@
 # Global Anchor Force Field
 
-This directory contains global surface-anchor generation and diagnostic tools. The current Stage 2 pipeline uses the realtime solver in `stage2/realtime_force_field.py`; this directory supplies the global anchor assets consumed by that path. The current method uses a global anchor set with active top-k selection. The hand-proximity mask remains an experimental variant and is not described as the released default.
+This directory contains global surface-anchor generation and diagnostic tools. Stage 2 uses the full anchor set as its geometric source, then by default limits force optimization to anchors within 15 cm of the current hand keypoints and selects up to 60 local anchors. If no anchors are within range, it falls back to global top-k. Set `--field_hand_mask_radius 0` to use global top-k without the mask.
 
 ## Generate anchors
 

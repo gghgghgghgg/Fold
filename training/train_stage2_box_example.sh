@@ -9,8 +9,8 @@ export SETUPTOOLS_USE_DISTUTILS=stdlib
 export WANDB_MODE="${WANDB_MODE:-offline}"
 
 BASE_CHECKPOINT="${BASE_CHECKPOINT:?Set BASE_CHECKPOINT to the selected Stage 1 checkpoint}"
-COMMANDS="${COMMANDS:-$ROOT/force_command_estimator/data/box_gt_global_force_commands_full.npz}"
-ENCODER_CHECKPOINT="${ENCODER_CHECKPOINT:-$ROOT/force_command_estimator/results/field_encoder/box_pointnet_300e/best_field_encoder.pt}"
+COMMANDS="${COMMANDS:-$ROOT/force_command_estimator/data/box_hard15_force_fields.npz}"
+ENCODER_CHECKPOINT="${ENCODER_CHECKPOINT:-$ROOT/force_command_estimator/results/field_encoder/box_hard15_pointnet_300e/best_field_encoder.pt}"
 test -s "$BASE_CHECKPOINT"
 test -s "$COMMANDS"
 test -s "$ENCODER_CHECKPOINT"
@@ -29,4 +29,5 @@ python stage2/train_stage2.py \
   --field_command_data "$COMMANDS" \
   --field_encoder_checkpoint "$ENCODER_CHECKPOINT" \
   --field_active_top_k 60 \
+  --field_hand_mask_radius 0.15 \
   -exp "${EXP_NAME:-fold_stage2_box_example}"

@@ -124,11 +124,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--realtime_force_field_cmd", action="store_true")
     parser.add_argument(
         "--field_command_data",
-        default="force_command_estimator/data/box_gt_global_force_commands_full.npz",
+        default="force_command_estimator/data/box_hard15_force_fields.npz",
     )
     parser.add_argument(
         "--field_encoder_checkpoint",
-        default="force_command_estimator/results/field_encoder/box_pointnet_300e/best_field_encoder.pt",
+        default="force_command_estimator/results/field_encoder/box_hard15_pointnet_300e/best_field_encoder.pt",
+    )
+    parser.add_argument(
+        "--field_hand_mask_radius", type=float, default=0.15,
+        help="Restrict force optimization to anchors within this distance of current hand keypoints; 0 disables the mask.",
     )
     parser.add_argument("--field_solver_iterations", type=int, default=32)
     parser.add_argument("--field_prefit_iterations", type=int, default=8)
@@ -168,6 +172,8 @@ def make_stage2_exp_name(args) -> str:
         exp_name += "_rtw6"
     if args.realtime_force_field_cmd:
         exp_name += "_rtfield128"
+        if args.field_hand_mask_radius > 0:
+            exp_name += f"_handmask{int(round(args.field_hand_mask_radius * 100))}cm"
     exp_name += f"_s2res{args.stage2_residual_scale}"
     exp_name += "_stage2semantic"
     return exp_name
@@ -221,6 +227,8 @@ def main():
         parser.error("--field_prefit_iterations must be positive")
     if args.field_active_top_k < 0:
         parser.error("--field_active_top_k must be non-negative")
+    if args.field_hand_mask_radius < 0:
+        parser.error("--field_hand_mask_radius must be non-negative")
 
     obj_name, start, end, subject_name, use_clip = parse_clip_string(args.clip)
     args.arctic_object = obj_name
@@ -271,6 +279,8 @@ def main():
             frame_offset=args.frame_start,
             prefit_iterations=args.field_prefit_iterations,
             active_top_k=args.field_active_top_k,
+            hand_mask_radius=args.field_hand_mask_radius,
+            retarget_name=args.retarget_name,
             iterations=args.field_solver_iterations,
             friction=args.field_friction,
             regularization=args.field_regularization,
@@ -283,6 +293,8 @@ def main():
             "frame_offset": int(args.frame_start),
             "prefit_iterations": int(args.field_prefit_iterations),
             "active_top_k": int(args.field_active_top_k),
+            "hand_mask_radius": float(args.field_hand_mask_radius),
+            "retarget_name": str(args.retarget_name),
             "iterations": int(args.field_solver_iterations),
             "friction": float(args.field_friction),
             "regularization": float(args.field_regularization),

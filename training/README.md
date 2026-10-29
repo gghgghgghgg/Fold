@@ -5,10 +5,15 @@ These scripts run the Box `[30,230)` example with seed 42. Prepare the ARCTIC se
 Run the stages in order from the repository root:
 
 1. Stage 1 policy: `bash training/train_stage1_box_example.sh`
-2. Train the 128D field encoder using the generated command file:
+2. Derive the hard-15 cm force labels from the command file and retarget trajectory, then train the matching 128D encoder:
 
    ```bash
-   COMMANDS=force_command_estimator/data/box_gt_global_force_commands_full.npz \
+   python force_command_estimator/derive_hand_distance_field_data.py \
+     --commands force_command_estimator/data/box_gt_global_force_commands_full.npz \
+     --retarget fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt \
+     --out force_command_estimator/data/box_hard15_force_fields.npz \
+     --method hard15 --radius 0.15 --active-top-k 60
+   COMMANDS=force_command_estimator/data/box_hard15_force_fields.npz \
      bash training/train_field_encoder_box_example.sh
    ```
 
@@ -16,8 +21,8 @@ Run the stages in order from the repository root:
 
    ```bash
    BASE_CHECKPOINT=/path/to/stage1_checkpoint.pth \
-   COMMANDS=force_command_estimator/data/box_gt_global_force_commands_full.npz \
-   ENCODER_CHECKPOINT=force_command_estimator/results/field_encoder/box_pointnet_300e/best_field_encoder.pt \
+   COMMANDS=force_command_estimator/data/box_hard15_force_fields.npz \
+   ENCODER_CHECKPOINT=force_command_estimator/results/field_encoder/box_hard15_pointnet_300e/best_field_encoder.pt \
      bash training/train_stage2_box_example.sh
    ```
 

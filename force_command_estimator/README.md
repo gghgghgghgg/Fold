@@ -5,6 +5,7 @@ This directory contains the GT force-command generator and PointNet encoder used
 ## Main files
 
 - `generate_gt_commands.py` creates per-frame force commands from object states, surface anchors, and the object URDF.
+- `derive_hand_distance_field_data.py` creates the hard 15 cm masked force labels used to train the matching encoder.
 - `field_encoder.py` defines the PointNet encoder.
 - `train_field_encoder.py` trains the encoder.
 - `../stage2/realtime_force_field.py` computes and encodes forces during Stage 2 training.
@@ -25,19 +26,31 @@ python force_command_estimator/generate_gt_commands.py \
 
 Each command represents the transition from frame `i` to frame `i+1`. Set `--num-frames 0` to use all remaining transitions. Keep frame indices, object units, and URDF consistent.
 
+Derive the 15 cm masked force labels from these commands and the matching hand retarget:
+
+```bash
+python force_command_estimator/derive_hand_distance_field_data.py \
+  --commands force_command_estimator/data/box_gt_global_force_commands_full.npz \
+  --retarget fold/assets/retargeted/inspire_hand/s01/box_use_01_vector_para.pt \
+  --out force_command_estimator/data/box_hard15_force_fields.npz \
+  --method hard15 --radius 0.15 --active-top-k 60
+```
+
 ## Train the encoder
 
 ```bash
 python force_command_estimator/train_field_encoder.py \
-  --data force_command_estimator/data/box_gt_global_force_commands_full.npz \
+  --data force_command_estimator/data/box_hard15_force_fields.npz \
   --epochs 300 --seed 42 --device cuda \
-  --out-dir force_command_estimator/results/field_encoder/box_pointnet_300e
+  --out-dir force_command_estimator/results/field_encoder/box_hard15_pointnet_300e
 ```
 
 The output `best_field_encoder.pt` is loaded by Stage 2.
 
 ## Stage 2 integration
 
-Enable `--realtime_force_field_cmd` and provide `--field_command_data` and `--field_encoder_checkpoint`. Stage 2 solves forces on the global anchor set, selects the active top-k anchors, and encodes the result at each simulation step.
+The released Stage 2 example uses a 15 cm hand-proximity mask with up to 60 local anchors. Run it with `--field_hand_mask_radius 0.15`. If no anchor is within range, Stage 2 falls back to global top-k. Set the radius to `0` to use global top-k throughout.
+
+New Stage 2 training defaults to 15 cm. Older saved checkpoints without a mask setting retain global-anchor evaluation behavior.
 
 See the [reproduction guide](../docs/ENVIRONMENT_SETUP_AND_REPRODUCTION.md) for the complete workflow. Generated commands and encoder checkpoints are local training outputs and are not included in the source release.

@@ -35,8 +35,5 @@ force_command_estimator/results/
 global_anchor_force_field/data/
 global_anchor_force_field/results/
 
-# Experimental local-forcefield feature deferred until paper-level validation.
-stage2/force_field_mask.py
-fold/tests/test_stage2_force_field_mask.py
 
 .DS_Store
