@@ -168,7 +168,7 @@ Keep the matching clip, seed, environment file, and evaluation options for each 
 
 ## Troubleshooting
 
-- **CUDA unavailable:** run `nvidia-smi`, then check `torch.cuda.is_available()` and `torch.version.cuda`. Confirm the installed NVIDIA driver supports the CUDA wheel selected above. A successful CPU test does not validate GPU training.
+
 - **`rl_games` import fails:** run from the repository root after exporting `PYTHONPATH="$PWD/rl_games:$PWD${PYTHONPATH:+:$PYTHONPATH}"`; do not install a different PyPI `rl-games` package over the vendored source.
 - **Missing model/retarget file:** run the `test -s` checks in the relevant section and verify the exact subject, object, sequence, and retarget suffix. Generate FoLD processed data and full-sequence retarget output using their separate documented steps.
 - **Numba cache is not writable:** point `NUMBA_CACHE_DIR` to a writable local directory, for example `export NUMBA_CACHE_DIR="$PWD/.cache/numba"`, then retry. Treat `NUMBA_DISABLE_JIT=1` as a diagnostic workaround only; it can change runtime performance.
