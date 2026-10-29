@@ -10,7 +10,7 @@
   <sup>2</sup>Institute of AI for Industries, Chinese Academy of Sciences<br>
   <sup>3</sup>Jiangsu Key Laboratory of AI for Industries<br>
   <sup>4</sup>Shenzhen University<br><br>
-  <sup>*</sup>Corresponding author: Yumeng Liu (<a href="mailto:lym29@mail.ustc.edu.cn">lym29@mail.ustc.edu.cn</a>)
+  <sup>*</sup>Corresponding author: Yumeng Liu, Ruizhen Hu
 </p>
 
 FoLD is a pipeline for dexterous manipulation of articulated objects. This repository contains the training and evaluation code used in our work.
